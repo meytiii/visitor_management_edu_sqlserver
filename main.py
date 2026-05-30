@@ -23,7 +23,6 @@ app.title(f"سامانه مدیریت ورود و خروج (اداره حراس�
 app.geometry("1050x600")
 app.resizable(False, False)
 
-# **FIX: Hide main window immediately after creation**
 app.withdraw()
 
 try:

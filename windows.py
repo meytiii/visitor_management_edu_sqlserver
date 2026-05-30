@@ -629,7 +629,6 @@ def show_heatmap_analytics(app):
         m_name = cb_month.get()
         d = cb_day.get()
         
-        # Get data from database
         data = database.get_hourly_stats(year=y if y else None,
                                           month_name=m_name if m_name in config.PERSIAN_MONTHS else None,
                                           day=d if d else None)
@@ -785,14 +784,11 @@ def open_search_window(app):
         total_pages = max(1, (total_records + items_per_page - 1) // items_per_page)
         if current_page > total_pages:
             current_page = total_pages
-            # re-fetch if page changed
             total_records, rows = database.search_visitors(filters, current_page, items_per_page)
         
         for i in tree.get_children():
             tree.delete(i)
         for r in rows:
-            # r is (id, visitor_name, national_id, employee_to_meet, department, entry_time_str, shamsi_date, exit_time, created_by)
-            # entry_time_str already formatted as HH:MM
             tree.insert("", tk.END, values=(r[0], r[1], r[2], r[3], r[4], r[5], r[6] or "", r[7] or "", r[8] or "---"))
         
         start_idx = (current_page - 1) * items_per_page + 1 if total_records > 0 else 0
@@ -822,8 +818,6 @@ def open_search_window(app):
 
     def export_to_excel():
         filters = current_filters
-        # For export, we need all records matching filters, not paginated
-        # We'll use search_visitors with a large page size
         total, all_rows = database.search_visitors(filters, page=1, items_per_page=1000000)
         if not all_rows:
             messagebox.showwarning("هشدار", "رکوردی برای خروجی گرفتن با این فیلترها وجود ندارد", parent=search_win)
@@ -893,7 +887,6 @@ def open_search_window(app):
         tb.Combobox(t_frame, textvariable=h_var, values=[str(i).zfill(2) for i in range(7, 21)], width=4, font=(FONT_MAIN, 12), justify='center', state='readonly').pack(side=tk.RIGHT, padx=5)
         
         try:
-            # entry_time in vals[5] is already formatted as HH:MM from fetch
             entry_time_only = vals[5]
             info_lbl = tb.Label(p_frame, text=f"ساعت ورود: {entry_time_only}   |   تاریخ: {entry_shamsi_date}",
                                 font=(FONT_MAIN, 11), bootstyle=(INFO, INVERSE), padding=10, anchor="center")
@@ -908,7 +901,6 @@ def open_search_window(app):
                 messagebox.showerror("خطا", "لطفاً ساعت و دقیقه را انتخاب کنید", parent=popup)
                 return
             
-            # Check exit time not before entry time (optional)
             try:
                 entry_time_str = vals[5]  # already HH:MM
                 entry_h, entry_m = map(int, entry_time_str.split(':'))

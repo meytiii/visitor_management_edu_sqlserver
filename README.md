@@ -1,36 +1,51 @@
-# Visitor Management System (Security Dept) | سیستم مدیریت ورود و خروج
-![background image](background.png)
-A lightweight, user-friendly Desktop Application designed for security guards at the **Education Department of Hamedan (اداره کل آموزش و پرورش استان همدان)** to track visitor entries and exits efficiently.
+# 🛡️ Visitor Management System – SQL Server Edition
 
-![Python](https://img.shields.io/badge/Python-3.x-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+[![Version](https://img.shields.io/badge/version-4.1.2-blue.svg)](https://github.com/meytiii/visitor_management_sqlserver)
+[![Python](https://img.shields.io/badge/python-3.9%2B-green.svg)](https://www.python.org/)
+[![SQL Server](https://img.shields.io/badge/SQL%20Server-2019%2B-red.svg)](https://www.microsoft.com/sql-server)
+[![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 
-## 📋 Features
+**Centralised, high‑performance version with Microsoft SQL Server backend.**  
+Designed for multi‑station environments, improved security, and enterprise‑grade reliability.
 
-*   **Visitor Registration:** Quickly record visitor details (Name, National ID, Host, Department).
-*   **Thermal Receipt Printing:** Automatically generates and prints a visitor pass/receipt to the default Windows printer immediately after registration.
-*   **Jalali Calendar (Hijri Shamsi):** Full support for Persian dates using `jdatetime`.
-*   **Database Storage:** Stores all records locally using SQLite.
-*   **Search & History:**
-    *   Advanced filtering by Name, National ID, Department, and Date.
-    *   User-friendly Date Dropdowns (Year/Month/Day).
-*   **Exit Management:** Simple double-click action to record the exit time for a visitor.
-*   **Persian UI:** Fully localized Right-to-Left (RTL) interface optimized for Persian users.
+> 🚨 **This is the actively developed version.**  
+> The old SQLite‑based version is [archived and no longer supported](https://github.com/meytiii/visitor_management_edu).
 
-## 🛠️ Tech Stack
+---
 
-*   **Language:** Python 3.x
-*   **GUI Framework:** Tkinter (Standard Python GUI) & Ttk (Themed Tkinter)
-*   **Database:** SQLite3
-*   **Date Handling:** `jdatetime` (for Hijri Shamsi conversion)
+## ✨ What's New in SQL Server Edition
 
-## 🚀 Installation & Usage
+- **Central database** – Multiple workstations can connect to the same SQL Server instance.
+- **Better concurrency** – No more file‑locking issues; true client‑server architecture.
+- **Enhanced security** – SQL Server authentication, encrypted connections (optional).
+- **Higher performance** – Optimised indexes, stored procedures (coming soon).
+- **Easier backups** – Use SQL Server native backup tools.
+- **Migration tool included** – Convert your old SQLite data to SQL Server with one script.
 
-### Prerequisites
-Ensure you have [Python](https://www.python.org/) installed on your machine.
+---
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/meytiii/visitor_management_edu.git
-cd visitor_management_edu
+## 📋 Requirements
+
+- Windows 7/10/11 (or Windows Server)
+- SQL Server 2019 or newer (Express edition works fine)
+- SQL Server ODBC Driver – **ODBC Driver 18 for SQL Server** (or Native Client 11.0)
+- Python 3.9+ (only if running from source)
+
+---
+
+## 🚀 Installation & Setup
+
+### 1. Prepare SQL Server
+
+Create a database (e.g., `VisitorSystem`) and a SQL login (e.g., `VisitorAppUser`) with `INSERT`, `SELECT`, `UPDATE`, `DELETE` permissions on the tables. The application will create the tables automatically on first run.
+
+### 2. Configure the Application
+
+Edit `config.py` and update the SQL connection parameters:
+
+```python
+SQL_SERVER = r"10.15.2.26\visitormanager"
+SQL_DATABASE = "VisitorSystem"
+SQL_USER = "VisitorAppUser"
+SQL_PASSWORD = "Herasat1405@"
+SQL_DRIVER = "{ODBC Driver 18 for SQL Server}"
