@@ -90,6 +90,7 @@ SQL_USER = "VisitorAppUser"
 SQL_PASSWORD = "Herasat1405@"
 SQL_DATABASE = "VisitorSystem"
 CONN_STR = f"DRIVER={{SQL Server Native Client 11.0}};SERVER={SQL_SERVER};DATABASE={SQL_DATABASE};UID={SQL_USER};PWD={SQL_PASSWORD};Trusted_Connection=no;"
+```
 
 3. **Run the migration script from a terminal:**
 ```bash
