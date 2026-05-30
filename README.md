@@ -75,7 +75,7 @@ If you have been using the old SQLite‑based version, you can migrate all exist
 Place the script in a folder like `migration_tool/` inside the repository.  
 You can download it directly from the repository at:
 
-👉 [migrate_old_DB.py](https://github.com/meytiii/visitor_management_sqlserver/blob/main/migration_tool/migrate_old_DB.py)
+👉 [migrate_old_DB.py](https://github.com/meytiii/visitor_management_sqlserver/blob/main/assets/migrate_old_DB.py)
 
 
 ### How to Use
