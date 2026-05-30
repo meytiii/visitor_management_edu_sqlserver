@@ -110,3 +110,18 @@ python migrate_old_DB.py
 Run the application and search for old records, or check directly in SQL Server Management Studio.
 
 > ⚠️ **Important:** The migration script **drops existing tables** before importing. If you already have new data in SQL Server, back it up first or modify the script to append instead.
+
+
+## 🛠️ Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| **Language** | Python 3.9+ |
+| **GUI Framework** | Tkinter + `ttkbootstrap` |
+| **Database** | Microsoft SQL Server |
+| **ODBC Driver** | `pyodbc` + ODBC Driver 18 / Native Client 11.0 |
+| **Persian Date** | `jdatetime` |
+| **Printing (Windows)** | `win32print` / `win32ui` |
+| **Reporting & Charts** | `pandas` + `matplotlib` |
+| **Text Reshaping** | `arabic_reshaper` + `python-bidi` |
+| **Image Processing** | Pillow (PIL) |
