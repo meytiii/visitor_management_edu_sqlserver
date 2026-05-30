@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📘 راهنمای سامانه ثبت ورود و خروج</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Tahoma', 'B Nazanin', 'Segoe UI', 'Vazirmatn', sans-serif;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.85), rgba(118, 75, 162, 0.85)), url('data:image/png;base64,{{BG_BASE64}}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.9;
+            color: #2d3748;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        h1 {
+            font-size: 2em;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .version-badge {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .version-badge span {
+            background: #2a5298;
+            color: white;
+            padding: 6px 18px;
+            border-radius: 50px;
+            font-size: 0.9em;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(42, 82, 152, 0.3);
+            display: inline-block;
+        }
+        h2 {
+            font-size: 1.8em;
+            margin: 30px 0 20px 0;
+            color: #1e3c72;
+            border-bottom: 4px solid #764ba2;
+            padding-bottom: 8px;
+            display: inline-block;
+            font-weight: 700;
+            position: relative;
+        }
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            right: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px 30px;
+            margin: 25px 0;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid rgba(102, 126, 234, 0.15);
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 30px -8px rgba(0, 0, 0, 0.15);
+            border-color: rgba(118, 75, 162, 0.3);
+        }
+        ul {
+            list-style: none;
+            padding-right: 0;
+        }
+        li {
+            margin-bottom: 14px;
+            padding-right: 28px;
+            position: relative;
+            font-size: 1.05em;
+        }
+        li::before {
+            content: "✨";
+            position: absolute;
+            right: 0;
+            color: #764ba2;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .tip {
+            background: #fef3c7;
+            border-right: 6px solid #f59e0b;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin: 25px 0;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.1);
+        }
+        .badge {
+            display: inline-block;
+            background: #764ba2;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.8em;
+            margin-left: 8px;
+        }
+        .glow {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(102, 126, 234, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+        }
+        .emoji-icon {
+            font-size: 1.4em;
+            margin-left: 6px;
+        }
+        .support {
+            background: linear-gradient(135deg, #f6f9fc 0%, #edf2f7 100%);
+            border-radius: 24px;
+            padding: 25px;
+            margin-top: 30px;
+            text-align: center;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .support h3 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .phone {
+            font-size: 2.2em;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 10px 0;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container glow">
+        <h1>
+            <span class="emoji-icon">📘</span> 
+            راهنمای جامع سامانه (مخصوص نگهبانی)
+            <span class="emoji-icon">✨</span>
+        </h1>
+        <div class="version-badge">
+            <span> نسخه {{APP_VERSION}} </span>
+        </div>
+
+        <!-- Welcome -->
+        <div class="card">
+            <h2>🔹 خوش آمدید</h2>
+            <p>
+                این سامانه برای ثبت سریع و دقیق ورود و خروج مراجعین طراحی شده است.
+                با چند کلیک می‌توانید اطلاعات را ثبت کنید، رسید چاپ کنید و سوابق را جستجو نمایید.
+            </p>
+        </div>
+
+        <!-- Login -->
+        <div class="card">
+            <h2>1️⃣ ورود به برنامه</h2>
+            <ul>
+                <li>پس از باز شدن برنامه، نام کاربری و رمز عبور خود را وارد کرده و دکمه «ورود» را بزنید.</li>
+                <li>نام کاربری و رمز توسط مسئول سیستم در اختیار شما قرار می‌گیرد.</li>
+                <li>در صورت فراموشی رمز، به سرپرست یا پشتیبانی اطلاع دهید.</li>
+                <li>پس از ورود، نام شما در بالای پنجره نمایش داده می‌شود.</li>
+            </ul>
+        </div>
+
+        <!-- Main Screen -->
+        <div class="card">
+            <h2>2️⃣ صفحه اصلی (چه چیزهایی می‌بینید)</h2>
+            <ul>
+                <li><strong>بالای صفحه:</strong> تاریخ و ساعت به‌روز.</li>
+                <li><strong>وسط صفحه:</strong> فرم ثبت اطلاعات مراجعه‌کننده و سه دکمه اصلی:
+                    <ul style="margin-top:8px;">
+                        <li>ثبت و چاپ رسید ✅</li>
+                        <li>مشاهده و جستجوی سوابق 📚</li>
+                        <li>راهنما 📑</li>
+                    </ul>
+                </li>
+                <li><strong>پایین صفحه:</strong> نوار وضعیت (پیام‌های کوتاه).</li>
+            </ul>
+        </div>
+
+        <!-- Register Visitor -->
+        <div class="card">
+            <h2>3️⃣ ثبت ورود مراجعه‌کننده (مهم‌ترین بخش)</h2>
+            <ul>
+                <li><strong>۱. کد ملی</strong> را وارد کنید (۱۰ رقم). فقط عدد تایپ کنید.
+                    <br>وقتی از این کادر خارج می‌شوید، برنامه بررسی می‌کند که آیا این فرد قبلاً آمده یا خیر.
+                    اگر آمده باشد، <strong>نام خودکار</strong> پر می‌شود.
+                </li>
+                <li><strong>۲. نام مراجعه‌کننده</strong> را بنویسید (فارسی).
+                    <br>اگه نام پر نشده یا اشتباه بود، می‌توانید ویرایش کنید.
+                </li>
+                <li><strong>۳. نام شخصی که می‌خواهد ملاقات کند</strong> را تایپ کنید.
+                    <br>با نوشتن چند حرف، لیستی از اسامی پرتکرار کارمندان ظاهر می‌شود. می‌توانید از آن لیست انتخاب کنید.
+                </li>
+                <li><strong>۴. واحد یا اداره</strong> مربوطه را از لیست کشویی انتخاب کنید.
+                    <br>اگر قبلاً برای این ملاقات‌شونده واحدی ثبت شده باشد، با انتخاب نام، واحد به‌طور خودکار پر می‌شود.
+                </li>
+                <li><strong>۵. روی دکمه «ثبت و چاپ رسید ✅»</strong> کلیک کنید.
+                    <br>اگر همه موارد پر شده باشد، رسید چاپ می‌شود و یک پیام سبز نشان می‌دهد که ثبت انجام شد.
+                </li>
+            </ul>
+            <div class="tip">
+                <span class="badge">⚠️ توجه</span> 
+                اگر کد ملی هشدار داد (مثلاً اشتباه باشد)، برنامه به شما می‌گوید ولی می‌توانید ثبت را ادامه دهید.
+                اگر همان فرد برای همان شخص امروز دوباره مراجعه کرد، برنامه سوال می‌کند و با تأیید شما ثبت می‌شود.
+            </div>
+        </div>
+
+        <!-- Search and Exit -->
+        <div class="card">
+            <h2>4️⃣ جستجوی سوابق و ثبت ساعت خروج</h2>
+            <ul>
+                <li>روی دکمه <strong>«مشاهده و جستجوی سوابق 📚»</strong> کلیک کنید.</li>
+                <li>می‌توانید نام، کد ملی، تاریخ (روز/ماه/سال) یا واحد را وارد کنید و دکمه «جستجو» را بزنید.</li>
+                <li>برای ثبت خروج، روی رکوردی که <strong>هنوز ساعت خروج ندارد</strong> دوبار کلیک کنید.</li>
+                <li>در پنجره بازشده، ساعت خروج را انتخاب کنید (می‌توانید از دکمه «زمان فعلی» استفاده کنید) و سپس «تأیید خروج» را بزنید.</li>
+                <li>اگر تاریخ ورود مربوط به امروز نباشد، برنامه هشدار می‌دهد. با بررسی، تأیید کنید.</li>
+                <li>پس از ثبت خروج، لیست به‌روز می‌شود.</li>
+            </ul>
+            <div class="tip">
+                <span class="badge">💡 نکته</span> 
+                برای دیدن همه مراجعین امروز، فقط دکمه «نمایش همه» را بزنید (بدون فیلتر).
+            </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="card">
+            <h2>5️⃣ تغییر رمز عبور</h2>
+            <ul>
+                <li>از منوی بالای صفحه (روی نام کاربری خود کلیک کنید) گزینه «تغییر رمز عبور» را انتخاب کنید.</li>
+                <li>رمز فعلی، سپس رمز جدید (حداقل ۳ حرف یا عدد) را وارد و تکرار کنید.</li>
+                <li>دکمه «تغییر رمز» را بزنید.</li>
+            </ul>
+        </div>
+
+        <!-- Tips / Troubleshooting -->
+        <div class="card">
+            <h2>6️⃣ نکات مهم و رفع مشکلات رایج</h2>
+            <ul>
+                <li><strong>پرینتر کار نمی‌کند؟</strong> نگران نباشید، اطلاعات در سیستم ذخیره شده است. رسید را می‌توان بعداً از طریق جستجو پیدا کرد و دستی نوشت.</li>
+                <li><strong>فراموش کردم خروج کسی را ثبت کنم.</strong> از بخش جستجو، حتی برای روزهای قبل می‌توانید خروج را ثبت کنید. برنامه فقط هشدار می‌دهد که تاریخ امروز نیست.</li>
+                <li><strong>نام ملاقات‌شونده در لیست نیست؟</strong> نام را کامل تایپ کنید. دفعات بعد در لیست پیشنهادی ظاهر خواهد شد.</li>
+                <li><strong>پایان کار:</strong> همیشه از منوی حساب کاربری گزینه «خروج از حساب» را بزنید تا برنامه بسته شود.</li>
+            </ul>
+        </div>
+
+        <!-- Footer Support -->
+        <div class="support">
+            <h3>📞 پشتیبانی فنی</h3>
+            <p style="font-size:1.2em; font-weight:500;">خرّم آبادی</p>
+            <div class="phone">داخلی 1300</div>
+            <p style="margin-top:20px;">اداره کل آموزش و پرورش استان همدان - اداره حراست</p>
+            <p style="margin-top:12px; opacity:0.8;">🌟 با آرزوی روزی پربار برای شما</p>
+        </div>
+    </div>
+</body>
+</html>

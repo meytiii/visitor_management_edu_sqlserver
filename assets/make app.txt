@@ -1,0 +1,23 @@
+pip install -r requirements.txt
+
+To convert the code to .exe file, write this command in the python terminal of the project directory :
+python -m PyInstaller --noconsole --onefile --icon=app_icon.ico visitor_system.py
+
+
+For windows 7 (using python 3.8): 
+py -3.8 -m PyInstaller --noconsole --onefile --icon=app_icon.ico visitor_system.py
+
+Installing the requirements for Python 3.8 : 
+py -3.8 -m pip install jdatetime pyinstaller
+
+
+if you cant find your python in interpreter list run this instead (replace ASUS with your username)  : 
+& "C:\Users\ASUS\AppData\Local\Programs\Python\Python37\python.exe" -m pip install jdatetime pyinstaller
+
+& "C:\Users\ASUS\AppData\Local\Programs\Python\Python37\python.exe" -m PyInstaller --noconsole --onefile --icon=app_icon.ico visitor_system.py
+
+
+for 32 bit windows : 
+& "C:\Users\mehdi_kh278\AppData\Local\Programs\Python\Python37-32\python.exe" -m pip install jdatetime pyinstaller pywin32 Pillow openpyxl pandas matplotlib arabic-reshaper python-bidi
+
+& "C:\Users\Novin\AppData\Local\Programs\Python\Python37-32\python.exe" -m PyInstaller --noconsole --onefile --icon=assets/app_icon.ico --add-data "assets;assets" main.py
