@@ -1,9 +1,9 @@
+ttkbootstrap
 jdatetime
-pywin32
-Pillow
-pyinstaller
 pandas
 matplotlib
-openpyxl
+arabic-reshaper
 python-bidi
-arabic-reshaper 
+Pillow
+pywin32
+pyodbc
