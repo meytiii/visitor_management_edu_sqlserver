@@ -49,3 +49,28 @@ SQL_DATABASE = "VisitorSystem"
 SQL_USER = "VisitorAppUser"
 SQL_PASSWORD = "Herasat1405@"
 SQL_DRIVER = "{ODBC Driver 18 for SQL Server}"
+```
+
+### 3. Run from Source
+```bash
+git clone https://github.com/meytiii/visitor_management_sqlserver.git
+cd visitor_management_sqlserver
+pip install -r requirements.txt
+python main.py
+```
+
+### 4. Build Standalone EXE
+```bash
+pyinstaller --noconsole --onefile --icon=assets/app_icon.ico --add-data "assets;assets" main.py
+```
+
+### 🔄 Migrate Old Data (from SQLite)
+
+If you have been using the old SQLite‑based version, you can migrate all existing records (visitors, users, audit logs) to the new SQL Server database using the provided migration script.
+
+Migration Script: migrate_old_DB.py
+
+Place the script in a folder like migration_tool/ inside the repository.
+You can download it directly from the repository at:
+
+https://github.com/meytiii/visitor_management_sqlserver/blob/main/migration_tool/migrate_old_DB.py
