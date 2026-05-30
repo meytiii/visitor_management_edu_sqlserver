@@ -8,6 +8,8 @@
 **Centralised, high‑performance version with Microsoft SQL Server backend.**  
 Designed for multi‑station environments, improved security, and enterprise‑grade reliability.
 
+![Background Image](./assets/background.png)
+
 > 🚨 **This is the actively developed version.**  
 > The old SQLite‑based version is [archived and no longer supported](https://github.com/meytiii/visitor_management_edu).
 
