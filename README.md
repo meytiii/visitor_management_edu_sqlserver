@@ -47,7 +47,7 @@ Edit `config.py` and update the SQL connection parameters:
 SQL_SERVER = r"10.15.2.26\visitormanager"
 SQL_DATABASE = "VisitorSystem"
 SQL_USER = "VisitorAppUser"
-SQL_PASSWORD = "Herasat1405@"
+SQL_PASSWORD = "password"
 SQL_DRIVER = "{ODBC Driver 18 for SQL Server}"
 ```
 
@@ -87,7 +87,7 @@ You can download it directly from the repository at:
 ```python
 SQL_SERVER = r"10.15.2.26\visitormanager"
 SQL_USER = "VisitorAppUser"
-SQL_PASSWORD = "Herasat1405@"
+SQL_PASSWORD = "password"
 SQL_DATABASE = "VisitorSystem"
 CONN_STR = f"DRIVER={{SQL Server Native Client 11.0}};SERVER={SQL_SERVER};DATABASE={SQL_DATABASE};UID={SQL_USER};PWD={SQL_PASSWORD};Trusted_Connection=no;"
 ```
