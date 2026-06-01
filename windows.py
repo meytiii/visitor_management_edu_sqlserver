@@ -240,13 +240,11 @@ def open_server_settings(parent):
     driver_var = tk.StringVar(value=config.SQL_DRIVER)
     driver_combo = tb.Combobox(main_frame, textvariable=driver_var, values=available_drivers,
                                state='readonly', font=(FONT_MAIN, 10))
-    driver_combo.pack(fill=tk.X, pady=(0, 30))   # extra space before buttons
+    driver_combo.pack(fill=tk.X, pady=(0, 30))
 
-    # Top button frame (Test + Save, side by side)
     top_btn_frame = tk.Frame(main_frame, bg="white")
     top_btn_frame.pack(pady=(5, 10))
 
-    # Cancel button frame (centered below)
     bottom_btn_frame = tk.Frame(main_frame, bg="white")
     bottom_btn_frame.pack(pady=(0, 10))
 
@@ -259,7 +257,6 @@ def open_server_settings(parent):
             "sql_driver": driver_var.get().strip()
         }
 
-        # Validate fields
         if not all([new_settings["sql_server"], new_settings["sql_database"],
                     new_settings["sql_user"], new_settings["sql_driver"]]):
             messagebox.showerror("Validation Error", "All fields must be filled.", parent=settings_win)
@@ -280,16 +277,13 @@ def open_server_settings(parent):
             "sql_driver": driver_var.get().strip()
         }
 
-        # Validate fields
         if not all([new_settings["sql_server"], new_settings["sql_database"],
                     new_settings["sql_user"], new_settings["sql_driver"]]):
             messagebox.showerror("Validation Error", "All fields must be filled.", parent=settings_win)
             return
 
-        # Test connection before saving (optional but recommended)
         ok, err_msg = config.test_connection(new_settings)
         if not ok:
-            # Ask user if they still want to save despite connection failure
             if not messagebox.askyesno("Connection Failed",
                                        f"Connection test failed:\n{err_msg}\n\nDo you still want to save these settings?",
                                        parent=settings_win):
