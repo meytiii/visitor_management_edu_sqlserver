@@ -382,10 +382,12 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Database setup error: {e}")
         def show_warning():
-            messagebox.showwarning("اتصال به پایگاه داده",
-                                   "امکان اتصال به سرور پیش‌فرض وجود ندارد.\n"
-                                   "لطفاً از منوی 'ابزارها' -> 'تنظیمات سرور' اطلاعات صحیح را وارد کنید.",
-                                   parent=app)
+            messagebox.showwarning(
+                "اتصال به پایگاه داده",
+                "امکان اتصال به سرور پیش‌فرض وجود ندارد.\n"
+                "لطفاً از منوی 'ابزارها' -> 'تنظیمات سرور' اطلاعات صحیح را وارد کنید.",
+                parent=app
+            )
         app.after(500, show_warning)
     
     try:

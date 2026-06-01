@@ -140,14 +140,14 @@ def show_login_screen(app, on_success_callback):
     def do_login():
         u = ent_user.get().strip()
         p = ent_pass.get().strip()
-        success, role, full_name = database.authenticate_user(u, p)
+        success, role, full_name, err_msg = database.authenticate_user(u, p)
         if success:
             database.log_audit("login_success", user=u)
             login_win.destroy()
             on_success_callback(u, role, full_name)
         else:
             database.log_audit("login_failed", user=u)
-            messagebox.showerror("خطا", "نام کاربری یا رمز عبور اشتباه است", parent=login_win)
+            messagebox.showerror("خطا", err_msg, parent=login_win)
             ent_pass.delete(0, tk.END)
 
     btn_login = tb.Button(login_win, text="ورود🚪", command=do_login, bootstyle=SUCCESS)

@@ -26,7 +26,6 @@ def get_connection():
         conn = pyodbc.connect(config.SQL_CONNECTION_STRING, autocommit=False)
         return conn
     except Exception as e:
-        messagebox.showerror("خطای پایگاه داده", f"اتصال به سرور SQL امکان‌پذیر نیست:\n{e}")
         raise
 
 class DBConnection:
@@ -168,19 +167,25 @@ def get_employee_suggestions(force_refresh=False):
 
 # --- USER MANAGEMENT ---
 def authenticate_user(username, password):
-    with DBConnection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT password, role, full_name FROM users WHERE username = ?", (username,))
-        row = cursor.fetchone()
-        
-        if row:
-            stored_hash, role, full_name_db = row
-            full_name = full_name_db if full_name_db else username
+    try:
+        with DBConnection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT password, role, full_name FROM users WHERE username = ?", (username,))
+            row = cursor.fetchone()
             
-            if verify_password(stored_hash, password):
-                return True, role, full_name
+            if row:
+                stored_hash, role, full_name_db = row
+                full_name = full_name_db if full_name_db else username
                 
-    return False, None, None
+                if verify_password(stored_hash, password):
+                    return True, role, full_name, ""
+                else:
+                    return False, None, None, "رمز عبور اشتباه است"
+            else:
+                return False, None, None, "نام کاربری یافت نشد"
+    except Exception as e:
+        # Connection or other database error
+        return False, None, None, f"خطا در اتصال به پایگاه داده:\n{str(e)}"
 
 def create_user(username, password, full_name, role="guard"):
     try:
