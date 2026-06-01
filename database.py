@@ -23,7 +23,7 @@ CACHE_DURATION = 300
 # --- CONNECTION HELPERS ---
 def get_connection():
     try:
-        conn = pyodbc.connect(config.SQL_CONNECTION_STRING, autocommit=False)
+        conn = pyodbc.connect(config.SQL_CONNECTION_STRING, autocommit=False, timeout=3)
         return conn
     except Exception as e:
         raise

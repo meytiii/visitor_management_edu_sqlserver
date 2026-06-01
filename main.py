@@ -370,25 +370,41 @@ def show_success_overlay(parent):
     fade(0.0, 1)
 
 def on_app_close():
-    database.log_audit("logout", user=getattr(app, "current_username", None))
-    database.log_audit("app_closed", user=getattr(app, "current_username", None))
-    app.destroy()
+    app.protocol("WM_DELETE_WINDOW", lambda: None)
+    try:
+        try:
+            database.log_audit("logout", user=getattr(app, "current_username", None))
+            database.log_audit("app_closed", user=getattr(app, "current_username", None))
+        except:
+            pass
+    finally:
+        app.quit()
+        app.destroy()
+
 app.protocol("WM_DELETE_WINDOW", on_app_close)
 
 if __name__ == "__main__":
-    try:
-        database.setup_database()
-        database.setup_audit_table()
-    except Exception as e:
-        print(f"Database setup error: {e}")
-        def show_warning():
-            messagebox.showwarning(
-                "اتصال به پایگاه داده",
-                "امکان اتصال به سرور پیش‌فرض وجود ندارد.\n"
-                "لطفاً از منوی 'ابزارها' -> 'تنظیمات سرور' اطلاعات صحیح را وارد کنید.",
-                parent=app
-            )
-        app.after(500, show_warning)
+    def setup_db_thread():
+        try:
+            database.setup_database()
+            database.setup_audit_table()
+        except Exception as e:
+            print(f"Database setup error: {e}")
+            def show_warning():
+                try:
+                    if app.winfo_exists():
+                        messagebox.showwarning(
+                            "اتصال به پایگاه داده",
+                            "امکان اتصال به سرور پیش‌فرض وجود ندارد.\n"
+                            "لطفاً از منوی 'ابزارها' -> 'تنظیمات سرور' اطلاعات صحیح را وارد کنید.",
+                            parent=app
+                        )
+                except:
+                    pass
+            app.after(500, show_warning)
+    
+    import threading
+    threading.Thread(target=setup_db_thread, daemon=True).start()
     
     try:
         update_employee_suggestions()
