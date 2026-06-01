@@ -420,6 +420,7 @@ def add_visitor(visitor_name, national_id, employee_to_meet, department, entry_t
 # --- ADDITIONAL FUNCTIONS FOR WINDOWS.PY ---
 
 def get_daily_stats(shamsi_date: str):
+    """Returns (total_visitors, without_exit) for a given Persian date."""
     with DBConnection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM visitors WHERE shamsi_date = ?", (shamsi_date,))
@@ -432,6 +433,11 @@ def get_daily_stats(shamsi_date: str):
         return total, no_exit
 
 def get_hourly_stats(year=None, month_name=None, day=None):
+    """
+    Returns a list of (hour_string, count) for the given filter.
+    hour_string is like '08', '09', etc.
+    """
+    # Build SQL query with DATEPART
     query = """
         SELECT 
             RIGHT('0' + CAST(DATEPART(hour, entry_time) AS VARCHAR(2)), 2) AS hour,

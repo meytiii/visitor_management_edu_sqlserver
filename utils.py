@@ -7,6 +7,8 @@ import arabic_reshaper
 from bidi.algorithm import get_display
 import config
 
+# No DB_PATH – backup/restore removed
+
 def validate_national_id(nid):
     if not nid:
         return False, "کد ملی نمی‌تواند خالی باشد"

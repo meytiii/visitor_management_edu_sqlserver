@@ -102,6 +102,14 @@ def show_login_screen(app, on_success_callback):
     login_win.geometry(f"{width}x{height}+{x}+{y}")
     login_win.resizable(False, False)
 
+    # ---------- MENU BAR ----------
+    menubar = tk.Menu(login_win)
+    tools_menu = tk.Menu(menubar, tearoff=0)
+    tools_menu.add_command(label="تنظیمات سرور", command=lambda: open_server_settings(login_win))
+    menubar.add_cascade(label="ابزارها", menu=tools_menu)
+    login_win.config(menu=menubar)
+    # ----------------------------------
+
     canvas = tk.Canvas(login_win, width=width, height=height, highlightthickness=0)
     canvas.pack(fill="both", expand=True)
     canvas.configure(bg="#2E3B4E")
@@ -153,6 +161,138 @@ def show_login_screen(app, on_success_callback):
 
     login_win.bind('<Return>', lambda e: do_login())
     ent_user.focus()
+
+def open_server_settings(parent):
+    """Open a window to edit and test SQL Server connection settings (English UI)."""
+    import pyodbc
+    ensure_fonts()
+
+    settings_win = tb.Toplevel(parent)
+    settings_win.title("تنظیمات اتصال به سرور")
+    settings_win.geometry("650x700")      # larger window
+    settings_win.resizable(False, False)
+    try:
+        settings_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
+    except:
+        pass
+
+    # ---------- BACKGROUND (developer.png) ----------
+    bg_path = utils.resource_path(os.path.join('assets', 'developer.png'))
+    if os.path.exists(bg_path):
+        try:
+            original_img = Image.open(bg_path)
+            # resize to window size
+            resized_img = original_img.resize((650, 700), Image.Resampling.LANCZOS)
+            bg_photo = ImageTk.PhotoImage(resized_img)
+            bg_label = tk.Label(settings_win, image=bg_photo)
+            bg_label.image = bg_photo
+            bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+            bg_label.lower()
+        except Exception:
+            pass
+
+    # ---------- CARD FRAME (white, semi‑transparent) ----------
+    card_frame = tk.Frame(settings_win, bg="white", bd=0, highlightthickness=0)
+    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=550, height=580)
+
+    # ---------- Content inside the card ----------
+    main_frame = tk.Frame(card_frame, bg="white", padx=20, pady=20)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Title (Persian)
+    tb.Label(main_frame, text="⚙️ تنظیمات اتصال به SQL Server", font=(FONT_MAIN, 14, "bold"),
+             bootstyle=PRIMARY, background="white").pack(pady=(0, 20))
+
+    # Server (English label)
+    tk.Label(main_frame, text="Server address:", font=(FONT_MAIN, 11), bg="white",
+             anchor="e").pack(anchor="e", pady=(5, 2))
+    server_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 11))
+    server_entry.insert(0, config.SQL_SERVER)
+    server_entry.pack(fill=tk.X, pady=(0, 10))
+
+    # Database
+    tk.Label(main_frame, text="Database name:", font=(FONT_MAIN, 11), bg="white",
+             anchor="e").pack(anchor="e", pady=(5, 2))
+    db_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 11))
+    db_entry.insert(0, config.SQL_DATABASE)
+    db_entry.pack(fill=tk.X, pady=(0, 10))
+
+    # Username
+    tk.Label(main_frame, text="Username:", font=(FONT_MAIN, 11), bg="white",
+             anchor="e").pack(anchor="e", pady=(5, 2))
+    user_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 11))
+    user_entry.insert(0, config.SQL_USER)
+    user_entry.pack(fill=tk.X, pady=(0, 10))
+
+    # Password
+    tk.Label(main_frame, text="Password:", font=(FONT_MAIN, 11), bg="white",
+             anchor="e").pack(anchor="e", pady=(5, 2))
+    pass_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 11), show="●")
+    pass_entry.insert(0, config.SQL_PASSWORD)
+    pass_entry.pack(fill=tk.X, pady=(0, 10))
+
+    # Driver dropdown
+    tk.Label(main_frame, text="ODBC Driver:", font=(FONT_MAIN, 11), bg="white",
+             anchor="e").pack(anchor="e", pady=(5, 2))
+    available_drivers = pyodbc.drivers()
+    driver_var = tk.StringVar(value=config.SQL_DRIVER)
+    driver_combo = tb.Combobox(main_frame, textvariable=driver_var, values=available_drivers,
+                               state='readonly', justify='center', font=(FONT_MAIN, 11))
+    driver_combo.pack(fill=tk.X, pady=(0, 15))
+
+    # Status label
+    status_label = tb.Label(main_frame, text="", font=(FONT_MAIN, 10), bootstyle=INFO, anchor="center",
+                            background="white")
+    status_label.pack(fill=tk.X, pady=(0, 15))
+
+    # Buttons
+    btn_frame = tk.Frame(main_frame, bg="white")
+    btn_frame.pack(fill=tk.X, pady=(10, 0))
+
+    def test_and_save():
+        new_settings = {
+            "sql_server": server_entry.get().strip(),
+            "sql_database": db_entry.get().strip(),
+            "sql_user": user_entry.get().strip(),
+            "sql_password": pass_entry.get().strip(),
+            "sql_driver": driver_var.get().strip()
+        }
+
+        # Validate
+        if not all([new_settings["sql_server"], new_settings["sql_database"],
+                    new_settings["sql_user"], new_settings["sql_driver"]]):
+            status_label.config(text="❌ All fields must be filled", bootstyle=DANGER)
+            return
+
+        # Test connection
+        status_label.config(text="⏳ Testing connection...", bootstyle=INFO)
+        settings_win.update_idletasks()
+
+        ok, err_msg = config.test_connection(new_settings)
+        if not ok:
+            status_label.config(text=f"❌ Error: {err_msg}", bootstyle=DANGER)
+            return
+
+        # Success
+        status_label.config(text="✅ Connection successful", bootstyle=SUCCESS)
+
+        # Save configuration
+        if config.save_config(new_settings):
+            messagebox.showinfo("Success", "Settings saved.\nThe application will now use these settings.",
+                                parent=settings_win)
+            settings_win.destroy()
+        else:
+            status_label.config(text="❌ Failed to save settings", bootstyle=DANGER)
+
+    # Buttons in English
+    tb.Button(btn_frame, text="Test Connection", command=test_and_save,
+              bootstyle=(INFO, OUTLINE)).pack(side=tk.RIGHT, padx=5, ipadx=10, ipady=4)
+    tb.Button(btn_frame, text="Save Settings", command=test_and_save,
+              bootstyle=SUCCESS).pack(side=tk.RIGHT, padx=5, ipadx=10, ipady=4)
+    tb.Button(btn_frame, text="Cancel", command=settings_win.destroy,
+              bootstyle=(SECONDARY, OUTLINE)).pack(side=tk.LEFT, padx=5, ipadx=10, ipady=4)
+
+    settings_win.bind('<Return>', lambda e: test_and_save())
 
 def open_user_manager(parent, app=None, current_user=None, on_self_role_change=None):
     ensure_fonts()
@@ -629,6 +769,7 @@ def show_heatmap_analytics(app):
         m_name = cb_month.get()
         d = cb_day.get()
         
+        # Get data from database
         data = database.get_hourly_stats(year=y if y else None,
                                           month_name=m_name if m_name in config.PERSIAN_MONTHS else None,
                                           day=d if d else None)
@@ -784,11 +925,14 @@ def open_search_window(app):
         total_pages = max(1, (total_records + items_per_page - 1) // items_per_page)
         if current_page > total_pages:
             current_page = total_pages
+            # re-fetch if page changed
             total_records, rows = database.search_visitors(filters, current_page, items_per_page)
         
         for i in tree.get_children():
             tree.delete(i)
         for r in rows:
+            # r is (id, visitor_name, national_id, employee_to_meet, department, entry_time_str, shamsi_date, exit_time, created_by)
+            # entry_time_str already formatted as HH:MM
             tree.insert("", tk.END, values=(r[0], r[1], r[2], r[3], r[4], r[5], r[6] or "", r[7] or "", r[8] or "---"))
         
         start_idx = (current_page - 1) * items_per_page + 1 if total_records > 0 else 0
@@ -818,6 +962,8 @@ def open_search_window(app):
 
     def export_to_excel():
         filters = current_filters
+        # For export, we need all records matching filters, not paginated
+        # We'll use search_visitors with a large page size
         total, all_rows = database.search_visitors(filters, page=1, items_per_page=1000000)
         if not all_rows:
             messagebox.showwarning("هشدار", "رکوردی برای خروجی گرفتن با این فیلترها وجود ندارد", parent=search_win)
@@ -887,6 +1033,7 @@ def open_search_window(app):
         tb.Combobox(t_frame, textvariable=h_var, values=[str(i).zfill(2) for i in range(7, 21)], width=4, font=(FONT_MAIN, 12), justify='center', state='readonly').pack(side=tk.RIGHT, padx=5)
         
         try:
+            # entry_time in vals[5] is already formatted as HH:MM from fetch
             entry_time_only = vals[5]
             info_lbl = tb.Label(p_frame, text=f"ساعت ورود: {entry_time_only}   |   تاریخ: {entry_shamsi_date}",
                                 font=(FONT_MAIN, 11), bootstyle=(INFO, INVERSE), padding=10, anchor="center")
@@ -901,6 +1048,7 @@ def open_search_window(app):
                 messagebox.showerror("خطا", "لطفاً ساعت و دقیقه را انتخاب کنید", parent=popup)
                 return
             
+            # Check exit time not before entry time (optional)
             try:
                 entry_time_str = vals[5]  # already HH:MM
                 entry_h, entry_m = map(int, entry_time_str.split(':'))

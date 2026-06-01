@@ -1,5 +1,7 @@
 import os
 from tkinter import messagebox
+import sys
+import json
 
 APP_VERSION = "4.1.2"
 
@@ -11,22 +13,111 @@ if not os.path.exists(APP_DATA_DIR):
     except OSError as e:
         messagebox.showerror("Error", f"Could not create database folder:\n{e}")
 
-# ========== SQL SERVER CONFIGURATION ==========
-SQL_SERVER = r"10.15.2.26\visitormanager"
-SQL_DATABASE = "VisitorSystem"
-SQL_USER = "VisitorAppUser"
-SQL_PASSWORD = "Herasat1405@"
-SQL_DRIVER = "{ODBC Driver 18 for SQL Server}"
+import json
+import sys
 
-SQL_CONNECTION_STRING = (
-    f"DRIVER={SQL_DRIVER};"
-    f"SERVER={SQL_SERVER};"
-    f"DATABASE={SQL_DATABASE};"
-    f"UID={SQL_USER};"
-    f"PWD={SQL_PASSWORD};"
-    "Trusted_Connection=no;"
-    "Encrypt=no;"
-)
+# ----------------------------------------------------------------------
+# DYNAMIC SERVER CONFIGURATION
+# ----------------------------------------------------------------------
+DEFAULT_SETTINGS = {
+    "sql_server": r"10.15.2.26\visitormanager",
+    "sql_database": "VisitorSystem",
+    "sql_user": "VisitorAppUser",
+    "sql_password": "Herasat1405@",
+    "sql_driver": "{ODBC Driver 18 for SQL Server}"
+}
+
+CONFIG_FILE = os.path.join(APP_DATA_DIR, "server_config.json")
+
+def _rebuild_connection_string():
+    global SQL_CONNECTION_STRING, SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER
+    SQL_CONNECTION_STRING = (
+        f"DRIVER={SQL_DRIVER};"
+        f"SERVER={SQL_SERVER};"
+        f"DATABASE={SQL_DATABASE};"
+        f"UID={SQL_USER};"
+        f"PWD={SQL_PASSWORD};"
+        "Trusted_Connection=no;"
+        "Encrypt=no;"
+    )
+
+def load_config():
+    global SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER
+    if not os.path.exists(CONFIG_FILE):
+        # Use defaults
+        SQL_SERVER = DEFAULT_SETTINGS["sql_server"]
+        SQL_DATABASE = DEFAULT_SETTINGS["sql_database"]
+        SQL_USER = DEFAULT_SETTINGS["sql_user"]
+        SQL_PASSWORD = DEFAULT_SETTINGS["sql_password"]
+        SQL_DRIVER = DEFAULT_SETTINGS["sql_driver"]
+        _rebuild_connection_string()
+        return
+
+    try:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            saved = json.load(f)
+        SQL_SERVER = saved.get("sql_server", DEFAULT_SETTINGS["sql_server"])
+        SQL_DATABASE = saved.get("sql_database", DEFAULT_SETTINGS["sql_database"])
+        SQL_USER = saved.get("sql_user", DEFAULT_SETTINGS["sql_user"])
+        SQL_PASSWORD = saved.get("sql_password", DEFAULT_SETTINGS["sql_password"])
+        SQL_DRIVER = saved.get("sql_driver", DEFAULT_SETTINGS["sql_driver"])
+        _rebuild_connection_string()
+    except Exception as e:
+        print(f"Error loading server config: {e}")
+        # Fallback to defaults
+        SQL_SERVER = DEFAULT_SETTINGS["sql_server"]
+        SQL_DATABASE = DEFAULT_SETTINGS["sql_database"]
+        SQL_USER = DEFAULT_SETTINGS["sql_user"]
+        SQL_PASSWORD = DEFAULT_SETTINGS["sql_password"]
+        SQL_DRIVER = DEFAULT_SETTINGS["sql_driver"]
+        _rebuild_connection_string()
+
+def save_config(settings_dict):
+    global SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER
+    SQL_SERVER = settings_dict["sql_server"]
+    SQL_DATABASE = settings_dict["sql_database"]
+    SQL_USER = settings_dict["sql_user"]
+    SQL_PASSWORD = settings_dict["sql_password"]
+    SQL_DRIVER = settings_dict["sql_driver"]
+    _rebuild_connection_string()
+
+    try:
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump({
+                "sql_server": SQL_SERVER,
+                "sql_database": SQL_DATABASE,
+                "sql_user": SQL_USER,
+                "sql_password": SQL_PASSWORD,
+                "sql_driver": SQL_DRIVER
+            }, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"Error saving server config: {e}")
+        return False
+
+def test_connection(settings_dict):
+    try:
+        conn_str = (
+            f"DRIVER={settings_dict['sql_driver']};"
+            f"SERVER={settings_dict['sql_server']};"
+            f"DATABASE={settings_dict['sql_database']};"
+            f"UID={settings_dict['sql_user']};"
+            f"PWD={settings_dict['sql_password']};"
+            "Trusted_Connection=no;"
+            "Encrypt=no;"
+        )
+        import pyodbc
+        conn = pyodbc.connect(conn_str, timeout=5)
+        conn.close()
+        return True, ""
+    except pyodbc.OperationalError as e:
+        return False, f"سرور یافت نشد یا در دسترس نیست:\n{e}"
+    except pyodbc.ProgrammingError as e:
+        return False, f"خطا در اعتبارسنجی یا نام پایگاه داده:\n{e}"
+    except Exception as e:
+        return False, f"خطای ناشناخته:\n{e}"
+
+load_config()
 
 DEPARTMENT_LIST = [
     "حوزه مدیر کل", "معاونت پرورشی", "معاونت تربیت بدنی",
