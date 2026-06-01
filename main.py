@@ -376,9 +376,23 @@ def on_app_close():
 app.protocol("WM_DELETE_WINDOW", on_app_close)
 
 if __name__ == "__main__":
-    database.setup_database()
-    database.setup_audit_table()
-    update_employee_suggestions()
+    try:
+        database.setup_database()
+        database.setup_audit_table()
+    except Exception as e:
+        print(f"Database setup error: {e}")
+        def show_warning():
+            messagebox.showwarning("اتصال به پایگاه داده",
+                                   "امکان اتصال به سرور پیش‌فرض وجود ندارد.\n"
+                                   "لطفاً از منوی 'ابزارها' -> 'تنظیمات سرور' اطلاعات صحیح را وارد کنید.",
+                                   parent=app)
+        app.after(500, show_warning)
+    
+    try:
+        update_employee_suggestions()
+    except:
+        pass
+        
     start_quote_cycle()
     windows.show_login_screen(app, setup_dashboard)
     app.mainloop()

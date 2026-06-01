@@ -169,20 +169,19 @@ def open_server_settings(parent):
 
     settings_win = tb.Toplevel(parent)
     settings_win.title("تنظیمات اتصال به سرور")
-    settings_win.geometry("650x700")      # larger window
+    settings_win.geometry("600x620")
     settings_win.resizable(False, False)
     try:
         settings_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
     except:
         pass
 
-    # ---------- BACKGROUND (developer.png) ----------
+    # Background (developer.png)
     bg_path = utils.resource_path(os.path.join('assets', 'developer.png'))
     if os.path.exists(bg_path):
         try:
             original_img = Image.open(bg_path)
-            # resize to window size
-            resized_img = original_img.resize((650, 700), Image.Resampling.LANCZOS)
+            resized_img = original_img.resize((600, 620), Image.Resampling.LANCZOS)
             bg_photo = ImageTk.PhotoImage(resized_img)
             bg_label = tk.Label(settings_win, image=bg_photo)
             bg_label.image = bg_photo
@@ -191,63 +190,62 @@ def open_server_settings(parent):
         except Exception:
             pass
 
-    # ---------- CARD FRAME (white, semi‑transparent) ----------
+    # White card frame
     card_frame = tk.Frame(settings_win, bg="white", bd=0, highlightthickness=0)
-    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=550, height=580)
+    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=520, height=540)
 
-    # ---------- Content inside the card ----------
-    main_frame = tk.Frame(card_frame, bg="white", padx=20, pady=20)
+    main_frame = tk.Frame(card_frame, bg="white", padx=15, pady=15)
     main_frame.pack(fill=tk.BOTH, expand=True)
 
-    # Title (Persian)
-    tb.Label(main_frame, text="⚙️ تنظیمات اتصال به SQL Server", font=(FONT_MAIN, 14, "bold"),
-             bootstyle=PRIMARY, background="white").pack(pady=(0, 20))
+    # Title
+    tb.Label(main_frame, text="⚙️ تنظیمات اتصال به SQL Server", font=(FONT_MAIN, 13, "bold"),
+             bootstyle=PRIMARY, background="white").pack(pady=(0, 15))
 
-    # Server (English label)
-    tk.Label(main_frame, text="Server address:", font=(FONT_MAIN, 11), bg="white",
-             anchor="e").pack(anchor="e", pady=(5, 2))
-    server_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 11))
+    # Server
+    tk.Label(main_frame, text="Server address:", font=(FONT_MAIN, 10), bg="white",
+             anchor="e").pack(anchor="e", pady=(3, 1))
+    server_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 10))
     server_entry.insert(0, config.SQL_SERVER)
-    server_entry.pack(fill=tk.X, pady=(0, 10))
+    server_entry.pack(fill=tk.X, pady=(0, 8))
 
     # Database
-    tk.Label(main_frame, text="Database name:", font=(FONT_MAIN, 11), bg="white",
-             anchor="e").pack(anchor="e", pady=(5, 2))
-    db_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 11))
+    tk.Label(main_frame, text="Database name:", font=(FONT_MAIN, 10), bg="white",
+             anchor="e").pack(anchor="e", pady=(3, 1))
+    db_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 10))
     db_entry.insert(0, config.SQL_DATABASE)
-    db_entry.pack(fill=tk.X, pady=(0, 10))
+    db_entry.pack(fill=tk.X, pady=(0, 8))
 
     # Username
-    tk.Label(main_frame, text="Username:", font=(FONT_MAIN, 11), bg="white",
-             anchor="e").pack(anchor="e", pady=(5, 2))
-    user_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 11))
+    tk.Label(main_frame, text="Username:", font=(FONT_MAIN, 10), bg="white",
+             anchor="e").pack(anchor="e", pady=(3, 1))
+    user_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 10))
     user_entry.insert(0, config.SQL_USER)
-    user_entry.pack(fill=tk.X, pady=(0, 10))
+    user_entry.pack(fill=tk.X, pady=(0, 8))
 
     # Password
-    tk.Label(main_frame, text="Password:", font=(FONT_MAIN, 11), bg="white",
-             anchor="e").pack(anchor="e", pady=(5, 2))
-    pass_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 11), show="●")
+    tk.Label(main_frame, text="Password:", font=(FONT_MAIN, 10), bg="white",
+             anchor="e").pack(anchor="e", pady=(3, 1))
+    pass_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 10), show="●")
     pass_entry.insert(0, config.SQL_PASSWORD)
-    pass_entry.pack(fill=tk.X, pady=(0, 10))
+    pass_entry.pack(fill=tk.X, pady=(0, 8))
 
     # Driver dropdown
-    tk.Label(main_frame, text="ODBC Driver:", font=(FONT_MAIN, 11), bg="white",
-             anchor="e").pack(anchor="e", pady=(5, 2))
+    tk.Label(main_frame, text="ODBC Driver:", font=(FONT_MAIN, 10), bg="white",
+             anchor="e").pack(anchor="e", pady=(3, 1))
     available_drivers = pyodbc.drivers()
     driver_var = tk.StringVar(value=config.SQL_DRIVER)
     driver_combo = tb.Combobox(main_frame, textvariable=driver_var, values=available_drivers,
-                               state='readonly', justify='center', font=(FONT_MAIN, 11))
-    driver_combo.pack(fill=tk.X, pady=(0, 15))
+                               state='readonly', justify='center', font=(FONT_MAIN, 10))
+    driver_combo.pack(fill=tk.X, pady=(0, 12))
 
     # Status label
-    status_label = tb.Label(main_frame, text="", font=(FONT_MAIN, 10), bootstyle=INFO, anchor="center",
+    status_label = tb.Label(main_frame, text="", font=(FONT_MAIN, 9), bootstyle=INFO, anchor="center",
                             background="white")
-    status_label.pack(fill=tk.X, pady=(0, 15))
+    status_label.pack(fill=tk.X, pady=(0, 12))
 
-    # Buttons
+    # Buttons frame
     btn_frame = tk.Frame(main_frame, bg="white")
-    btn_frame.pack(fill=tk.X, pady=(10, 0))
+    btn_frame.pack(fill=tk.X, pady=(5, 0))
 
     def test_and_save():
         new_settings = {
@@ -258,13 +256,11 @@ def open_server_settings(parent):
             "sql_driver": driver_var.get().strip()
         }
 
-        # Validate
         if not all([new_settings["sql_server"], new_settings["sql_database"],
                     new_settings["sql_user"], new_settings["sql_driver"]]):
             status_label.config(text="❌ All fields must be filled", bootstyle=DANGER)
             return
 
-        # Test connection
         status_label.config(text="⏳ Testing connection...", bootstyle=INFO)
         settings_win.update_idletasks()
 
@@ -273,10 +269,8 @@ def open_server_settings(parent):
             status_label.config(text=f"❌ Error: {err_msg}", bootstyle=DANGER)
             return
 
-        # Success
         status_label.config(text="✅ Connection successful", bootstyle=SUCCESS)
 
-        # Save configuration
         if config.save_config(new_settings):
             messagebox.showinfo("Success", "Settings saved.\nThe application will now use these settings.",
                                 parent=settings_win)
@@ -284,13 +278,12 @@ def open_server_settings(parent):
         else:
             status_label.config(text="❌ Failed to save settings", bootstyle=DANGER)
 
-    # Buttons in English
     tb.Button(btn_frame, text="Test Connection", command=test_and_save,
-              bootstyle=(INFO, OUTLINE)).pack(side=tk.RIGHT, padx=5, ipadx=10, ipady=4)
+              bootstyle=(INFO, OUTLINE)).pack(side=tk.RIGHT, padx=3, ipadx=6, ipady=2)
     tb.Button(btn_frame, text="Save Settings", command=test_and_save,
-              bootstyle=SUCCESS).pack(side=tk.RIGHT, padx=5, ipadx=10, ipady=4)
+              bootstyle=SUCCESS).pack(side=tk.RIGHT, padx=3, ipadx=6, ipady=2)
     tb.Button(btn_frame, text="Cancel", command=settings_win.destroy,
-              bootstyle=(SECONDARY, OUTLINE)).pack(side=tk.LEFT, padx=5, ipadx=10, ipady=4)
+              bootstyle=(SECONDARY, OUTLINE)).pack(side=tk.LEFT, padx=3, ipadx=6, ipady=2)
 
     settings_win.bind('<Return>', lambda e: test_and_save())
 
