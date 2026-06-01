@@ -169,7 +169,7 @@ def open_server_settings(parent):
 
     settings_win = tb.Toplevel(parent)
     settings_win.title("Server Settings")                     # English title
-    settings_win.geometry("500x700")                          # narrower and taller
+    settings_win.geometry("500x720")                          # a bit taller for spacing
     settings_win.resizable(False, False)
     try:
         settings_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
@@ -181,7 +181,7 @@ def open_server_settings(parent):
     if os.path.exists(bg_path):
         try:
             original_img = Image.open(bg_path)
-            resized_img = original_img.resize((500, 700), Image.Resampling.LANCZOS)
+            resized_img = original_img.resize((500, 720), Image.Resampling.LANCZOS)
             bg_photo = ImageTk.PhotoImage(resized_img)
             bg_label = tk.Label(settings_win, image=bg_photo)
             bg_label.image = bg_photo
@@ -190,9 +190,9 @@ def open_server_settings(parent):
         except Exception:
             pass
 
-    # White card frame (slightly smaller to fit the new window size)
+    # White card frame
     card_frame = tk.Frame(settings_win, bg="white", bd=0, highlightthickness=0)
-    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=460, height=640)
+    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=460, height=660)
 
     main_frame = tk.Frame(card_frame, bg="white", padx=20, pady=20)
     main_frame.pack(fill=tk.BOTH, expand=True)
@@ -241,16 +241,20 @@ def open_server_settings(parent):
     driver_var = tk.StringVar(value=config.SQL_DRIVER)
     driver_combo = tb.Combobox(main_frame, textvariable=driver_var, values=available_drivers,
                                state='readonly', font=(FONT_MAIN, 10))
-    driver_combo.pack(fill=tk.X, pady=(0, 15))
+    driver_combo.pack(fill=tk.X, pady=(0, 20))   # Increased space below driver (from 15 to 20)
 
-    # Status label
+    # Status label (error messages will appear here)
     status_label = tb.Label(main_frame, text="", font=(FONT_MAIN, 9), bootstyle=INFO,
-                            anchor="center", background="white")
+                            anchor="center", background="white", wraplength=400)
     status_label.pack(fill=tk.X, pady=(0, 15))
 
-    # Buttons frame (left‑to‑right order)
-    btn_frame = tk.Frame(main_frame, bg="white")
-    btn_frame.pack(fill=tk.X, pady=(10, 0))
+    # Buttons frame for Test + Save (side by side)
+    top_btn_frame = tk.Frame(main_frame, bg="white")
+    top_btn_frame.pack(fill=tk.X, pady=(5, 5))
+
+    # Cancel button below (centered)
+    bottom_btn_frame = tk.Frame(main_frame, bg="white")
+    bottom_btn_frame.pack(fill=tk.X, pady=(5, 0))
 
     def test_and_save():
         new_settings = {
@@ -286,13 +290,19 @@ def open_server_settings(parent):
         else:
             status_label.config(text="❌ Failed to save settings", bootstyle=DANGER)
 
-    # Buttons placed left to right
-    tb.Button(btn_frame, text="Test Connection", command=test_and_save,
-              bootstyle=(INFO, OUTLINE)).pack(side=tk.LEFT, padx=3, ipadx=6, ipady=2)
-    tb.Button(btn_frame, text="Save Settings", command=test_and_save,
-              bootstyle=SUCCESS).pack(side=tk.LEFT, padx=3, ipadx=6, ipady=2)
-    tb.Button(btn_frame, text="Cancel", command=settings_win.destroy,
-              bootstyle=(SECONDARY, OUTLINE)).pack(side=tk.LEFT, padx=3, ipadx=6, ipady=2)
+    # --- Test and Save buttons (side by side, smaller) ---
+    btn_test = tb.Button(top_btn_frame, text="Test Connection", command=test_and_save,
+                         bootstyle=(INFO, OUTLINE), width=16)
+    btn_test.pack(side=tk.LEFT, padx=5, ipady=2)
+
+    btn_save = tb.Button(top_btn_frame, text="Save Settings", command=test_and_save,
+                         bootstyle=SUCCESS, width=16)
+    btn_save.pack(side=tk.LEFT, padx=5, ipady=2)
+
+    # --- Cancel button (centered, below) ---
+    btn_cancel = tb.Button(bottom_btn_frame, text="Cancel", command=settings_win.destroy,
+                           bootstyle=(SECONDARY, OUTLINE), width=16)
+    btn_cancel.pack(ipady=2)
 
     settings_win.bind('<Return>', lambda e: test_and_save())
 
