@@ -163,7 +163,6 @@ def show_login_screen(app, on_success_callback):
     ent_user.focus()
 
 def open_server_settings(parent):
-    """Open a window to edit and test SQL Server connection settings (English UI, LTR layout)."""
     import pyodbc
     ensure_fonts()
 
@@ -192,7 +191,7 @@ def open_server_settings(parent):
 
     # White card frame
     card_frame = tk.Frame(settings_win, bg="white", bd=0, highlightthickness=0)
-    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=460, height=620)
+    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=460, height=650)
 
     main_frame = tk.Frame(card_frame, bg="white", padx=20, pady=20)
     main_frame.pack(fill=tk.BOTH, expand=True)
