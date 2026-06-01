@@ -935,7 +935,6 @@ def open_search_window(app):
         total_pages = max(1, (total_records + items_per_page - 1) // items_per_page)
         if current_page > total_pages:
             current_page = total_pages
-            # re-fetch if page changed
             total_records, rows = database.search_visitors(filters, current_page, items_per_page)
         
         for i in tree.get_children():
