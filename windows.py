@@ -168,8 +168,8 @@ def open_server_settings(parent):
     ensure_fonts()
 
     settings_win = tb.Toplevel(parent)
-    settings_win.title("Server Settings")                     # English title
-    settings_win.geometry("500x720")                          # a bit taller for spacing
+    settings_win.title("Server Settings")
+    settings_win.geometry("500x680")
     settings_win.resizable(False, False)
     try:
         settings_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
@@ -181,7 +181,7 @@ def open_server_settings(parent):
     if os.path.exists(bg_path):
         try:
             original_img = Image.open(bg_path)
-            resized_img = original_img.resize((500, 720), Image.Resampling.LANCZOS)
+            resized_img = original_img.resize((500, 680), Image.Resampling.LANCZOS)
             bg_photo = ImageTk.PhotoImage(resized_img)
             bg_label = tk.Label(settings_win, image=bg_photo)
             bg_label.image = bg_photo
@@ -192,7 +192,7 @@ def open_server_settings(parent):
 
     # White card frame
     card_frame = tk.Frame(settings_win, bg="white", bd=0, highlightthickness=0)
-    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=460, height=660)
+    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=460, height=620)
 
     main_frame = tk.Frame(card_frame, bg="white", padx=20, pady=20)
     main_frame.pack(fill=tk.BOTH, expand=True)
@@ -241,22 +241,17 @@ def open_server_settings(parent):
     driver_var = tk.StringVar(value=config.SQL_DRIVER)
     driver_combo = tb.Combobox(main_frame, textvariable=driver_var, values=available_drivers,
                                state='readonly', font=(FONT_MAIN, 10))
-    driver_combo.pack(fill=tk.X, pady=(0, 20))   # Increased space below driver (from 15 to 20)
+    driver_combo.pack(fill=tk.X, pady=(0, 30))   # extra space before buttons
 
-    # Status label (error messages will appear here)
-    status_label = tb.Label(main_frame, text="", font=(FONT_MAIN, 9), bootstyle=INFO,
-                            anchor="center", background="white", wraplength=400)
-    status_label.pack(fill=tk.X, pady=(0, 15))
-
-    # Buttons frame for Test + Save (side by side)
+    # Top button frame (Test + Save, side by side)
     top_btn_frame = tk.Frame(main_frame, bg="white")
-    top_btn_frame.pack(fill=tk.X, pady=(5, 5))
+    top_btn_frame.pack(pady=(5, 10))
 
-    # Cancel button below (centered)
+    # Cancel button frame (centered below)
     bottom_btn_frame = tk.Frame(main_frame, bg="white")
-    bottom_btn_frame.pack(fill=tk.X, pady=(5, 0))
+    bottom_btn_frame.pack(pady=(0, 10))
 
-    def test_and_save():
+    def test_connection():
         new_settings = {
             "sql_server": server_entry.get().strip(),
             "sql_database": db_entry.get().strip(),
@@ -265,46 +260,63 @@ def open_server_settings(parent):
             "sql_driver": driver_var.get().strip()
         }
 
-        # Validate
+        # Validate fields
         if not all([new_settings["sql_server"], new_settings["sql_database"],
                     new_settings["sql_user"], new_settings["sql_driver"]]):
-            status_label.config(text="❌ All fields must be filled", bootstyle=DANGER)
+            messagebox.showerror("Validation Error", "All fields must be filled.", parent=settings_win)
             return
-
-        # Test connection
-        status_label.config(text="⏳ Testing connection...", bootstyle=INFO)
-        settings_win.update_idletasks()
 
         ok, err_msg = config.test_connection(new_settings)
-        if not ok:
-            status_label.config(text=f"❌ Error: {err_msg}", bootstyle=DANGER)
+        if ok:
+            messagebox.showinfo("Connection Test", "✅ Connection successful!", parent=settings_win)
+        else:
+            messagebox.showerror("Connection Failed", err_msg, parent=settings_win)
+
+    def save_settings():
+        new_settings = {
+            "sql_server": server_entry.get().strip(),
+            "sql_database": db_entry.get().strip(),
+            "sql_user": user_entry.get().strip(),
+            "sql_password": pass_entry.get().strip(),
+            "sql_driver": driver_var.get().strip()
+        }
+
+        # Validate fields
+        if not all([new_settings["sql_server"], new_settings["sql_database"],
+                    new_settings["sql_user"], new_settings["sql_driver"]]):
+            messagebox.showerror("Validation Error", "All fields must be filled.", parent=settings_win)
             return
 
-        status_label.config(text="✅ Connection successful", bootstyle=SUCCESS)
+        # Test connection before saving (optional but recommended)
+        ok, err_msg = config.test_connection(new_settings)
+        if not ok:
+            # Ask user if they still want to save despite connection failure
+            if not messagebox.askyesno("Connection Failed",
+                                       f"Connection test failed:\n{err_msg}\n\nDo you still want to save these settings?",
+                                       parent=settings_win):
+                return
 
-        # Save configuration
         if config.save_config(new_settings):
-            messagebox.showinfo("Success", "Settings saved.\nThe application will now use these settings.",
-                                parent=settings_win)
+            messagebox.showinfo("Success", "Settings saved.\nThe application will now use these settings.", parent=settings_win)
             settings_win.destroy()
         else:
-            status_label.config(text="❌ Failed to save settings", bootstyle=DANGER)
+            messagebox.showerror("Error", "Failed to save settings.\nCheck file permissions.", parent=settings_win)
 
-    # --- Test and Save buttons (side by side, smaller) ---
-    btn_test = tb.Button(top_btn_frame, text="Test Connection", command=test_and_save,
-                         bootstyle=(INFO, OUTLINE), width=16)
-    btn_test.pack(side=tk.LEFT, padx=5, ipady=2)
+    # Test and Save buttons (larger, side by side, centered)
+    btn_test = tb.Button(top_btn_frame, text="Test Connection", command=test_connection,
+                         bootstyle=(INFO, OUTLINE), width=18)
+    btn_test.pack(side=tk.LEFT, padx=8, ipady=3)
 
-    btn_save = tb.Button(top_btn_frame, text="Save Settings", command=test_and_save,
-                         bootstyle=SUCCESS, width=16)
-    btn_save.pack(side=tk.LEFT, padx=5, ipady=2)
+    btn_save = tb.Button(top_btn_frame, text="Save Settings", command=save_settings,
+                         bootstyle=SUCCESS, width=18)
+    btn_save.pack(side=tk.LEFT, padx=8, ipady=3)
 
-    # --- Cancel button (centered, below) ---
+    # Cancel button (centered, also larger)
     btn_cancel = tb.Button(bottom_btn_frame, text="Cancel", command=settings_win.destroy,
-                           bootstyle=(SECONDARY, OUTLINE), width=16)
-    btn_cancel.pack(ipady=2)
+                           bootstyle=(SECONDARY, OUTLINE), width=18)
+    btn_cancel.pack(ipady=3)
 
-    settings_win.bind('<Return>', lambda e: test_and_save())
+    settings_win.bind('<Return>', lambda e: save_settings())
 
 def open_user_manager(parent, app=None, current_user=None, on_self_role_change=None):
     ensure_fonts()
