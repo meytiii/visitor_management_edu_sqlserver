@@ -163,13 +163,13 @@ def show_login_screen(app, on_success_callback):
     ent_user.focus()
 
 def open_server_settings(parent):
-    """Open a window to edit and test SQL Server connection settings (English UI)."""
+    """Open a window to edit and test SQL Server connection settings (English UI, LTR layout)."""
     import pyodbc
     ensure_fonts()
 
     settings_win = tb.Toplevel(parent)
-    settings_win.title("تنظیمات اتصال به سرور")
-    settings_win.geometry("600x620")
+    settings_win.title("Server Settings")                     # English title
+    settings_win.geometry("500x700")                          # narrower and taller
     settings_win.resizable(False, False)
     try:
         settings_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
@@ -181,7 +181,7 @@ def open_server_settings(parent):
     if os.path.exists(bg_path):
         try:
             original_img = Image.open(bg_path)
-            resized_img = original_img.resize((600, 620), Image.Resampling.LANCZOS)
+            resized_img = original_img.resize((500, 700), Image.Resampling.LANCZOS)
             bg_photo = ImageTk.PhotoImage(resized_img)
             bg_label = tk.Label(settings_win, image=bg_photo)
             bg_label.image = bg_photo
@@ -190,62 +190,67 @@ def open_server_settings(parent):
         except Exception:
             pass
 
-    # White card frame
+    # White card frame (slightly smaller to fit the new window size)
     card_frame = tk.Frame(settings_win, bg="white", bd=0, highlightthickness=0)
-    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=520, height=540)
+    card_frame.place(relx=0.5, rely=0.5, anchor="center", width=460, height=640)
 
-    main_frame = tk.Frame(card_frame, bg="white", padx=15, pady=15)
+    main_frame = tk.Frame(card_frame, bg="white", padx=20, pady=20)
     main_frame.pack(fill=tk.BOTH, expand=True)
 
-    # Title
-    tb.Label(main_frame, text="⚙️ تنظیمات اتصال به SQL Server", font=(FONT_MAIN, 13, "bold"),
-             bootstyle=PRIMARY, background="white").pack(pady=(0, 15))
+    # Title (English)
+    tb.Label(main_frame, text="⚙️ SQL Server Connection Settings", font=(FONT_MAIN, 13, "bold"),
+             bootstyle=PRIMARY, background="white").pack(pady=(0, 20))
 
-    # Server
-    tk.Label(main_frame, text="Server address:", font=(FONT_MAIN, 10), bg="white",
-             anchor="e").pack(anchor="e", pady=(3, 1))
-    server_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 10))
+    # --- Server ---
+    lbl_server = tk.Label(main_frame, text="Server address:", font=(FONT_MAIN, 10),
+                          bg="white", anchor="w")
+    lbl_server.pack(anchor="w", pady=(5, 2))
+    server_entry = tb.Entry(main_frame, font=(FONT_MAIN, 10))
     server_entry.insert(0, config.SQL_SERVER)
-    server_entry.pack(fill=tk.X, pady=(0, 8))
+    server_entry.pack(fill=tk.X, pady=(0, 10))
 
-    # Database
-    tk.Label(main_frame, text="Database name:", font=(FONT_MAIN, 10), bg="white",
-             anchor="e").pack(anchor="e", pady=(3, 1))
-    db_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 10))
+    # --- Database ---
+    lbl_db = tk.Label(main_frame, text="Database name:", font=(FONT_MAIN, 10),
+                      bg="white", anchor="w")
+    lbl_db.pack(anchor="w", pady=(5, 2))
+    db_entry = tb.Entry(main_frame, font=(FONT_MAIN, 10))
     db_entry.insert(0, config.SQL_DATABASE)
-    db_entry.pack(fill=tk.X, pady=(0, 8))
+    db_entry.pack(fill=tk.X, pady=(0, 10))
 
-    # Username
-    tk.Label(main_frame, text="Username:", font=(FONT_MAIN, 10), bg="white",
-             anchor="e").pack(anchor="e", pady=(3, 1))
-    user_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 10))
+    # --- Username ---
+    lbl_user = tk.Label(main_frame, text="Username:", font=(FONT_MAIN, 10),
+                        bg="white", anchor="w")
+    lbl_user.pack(anchor="w", pady=(5, 2))
+    user_entry = tb.Entry(main_frame, font=(FONT_MAIN, 10))
     user_entry.insert(0, config.SQL_USER)
-    user_entry.pack(fill=tk.X, pady=(0, 8))
+    user_entry.pack(fill=tk.X, pady=(0, 10))
 
-    # Password
-    tk.Label(main_frame, text="Password:", font=(FONT_MAIN, 10), bg="white",
-             anchor="e").pack(anchor="e", pady=(3, 1))
-    pass_entry = tb.Entry(main_frame, justify='right', font=(FONT_MAIN, 10), show="●")
+    # --- Password ---
+    lbl_pass = tk.Label(main_frame, text="Password:", font=(FONT_MAIN, 10),
+                        bg="white", anchor="w")
+    lbl_pass.pack(anchor="w", pady=(5, 2))
+    pass_entry = tb.Entry(main_frame, font=(FONT_MAIN, 10), show="●")
     pass_entry.insert(0, config.SQL_PASSWORD)
-    pass_entry.pack(fill=tk.X, pady=(0, 8))
+    pass_entry.pack(fill=tk.X, pady=(0, 10))
 
-    # Driver dropdown
-    tk.Label(main_frame, text="ODBC Driver:", font=(FONT_MAIN, 10), bg="white",
-             anchor="e").pack(anchor="e", pady=(3, 1))
+    # --- Driver dropdown ---
+    lbl_driver = tk.Label(main_frame, text="ODBC Driver:", font=(FONT_MAIN, 10),
+                          bg="white", anchor="w")
+    lbl_driver.pack(anchor="w", pady=(5, 2))
     available_drivers = pyodbc.drivers()
     driver_var = tk.StringVar(value=config.SQL_DRIVER)
     driver_combo = tb.Combobox(main_frame, textvariable=driver_var, values=available_drivers,
-                               state='readonly', justify='center', font=(FONT_MAIN, 10))
-    driver_combo.pack(fill=tk.X, pady=(0, 12))
+                               state='readonly', font=(FONT_MAIN, 10))
+    driver_combo.pack(fill=tk.X, pady=(0, 15))
 
     # Status label
-    status_label = tb.Label(main_frame, text="", font=(FONT_MAIN, 9), bootstyle=INFO, anchor="center",
-                            background="white")
-    status_label.pack(fill=tk.X, pady=(0, 12))
+    status_label = tb.Label(main_frame, text="", font=(FONT_MAIN, 9), bootstyle=INFO,
+                            anchor="center", background="white")
+    status_label.pack(fill=tk.X, pady=(0, 15))
 
-    # Buttons frame
+    # Buttons frame (left‑to‑right order)
     btn_frame = tk.Frame(main_frame, bg="white")
-    btn_frame.pack(fill=tk.X, pady=(5, 0))
+    btn_frame.pack(fill=tk.X, pady=(10, 0))
 
     def test_and_save():
         new_settings = {
@@ -256,11 +261,13 @@ def open_server_settings(parent):
             "sql_driver": driver_var.get().strip()
         }
 
+        # Validate
         if not all([new_settings["sql_server"], new_settings["sql_database"],
                     new_settings["sql_user"], new_settings["sql_driver"]]):
             status_label.config(text="❌ All fields must be filled", bootstyle=DANGER)
             return
 
+        # Test connection
         status_label.config(text="⏳ Testing connection...", bootstyle=INFO)
         settings_win.update_idletasks()
 
@@ -271,6 +278,7 @@ def open_server_settings(parent):
 
         status_label.config(text="✅ Connection successful", bootstyle=SUCCESS)
 
+        # Save configuration
         if config.save_config(new_settings):
             messagebox.showinfo("Success", "Settings saved.\nThe application will now use these settings.",
                                 parent=settings_win)
@@ -278,10 +286,11 @@ def open_server_settings(parent):
         else:
             status_label.config(text="❌ Failed to save settings", bootstyle=DANGER)
 
+    # Buttons placed left to right
     tb.Button(btn_frame, text="Test Connection", command=test_and_save,
-              bootstyle=(INFO, OUTLINE)).pack(side=tk.RIGHT, padx=3, ipadx=6, ipady=2)
+              bootstyle=(INFO, OUTLINE)).pack(side=tk.LEFT, padx=3, ipadx=6, ipady=2)
     tb.Button(btn_frame, text="Save Settings", command=test_and_save,
-              bootstyle=SUCCESS).pack(side=tk.RIGHT, padx=3, ipadx=6, ipady=2)
+              bootstyle=SUCCESS).pack(side=tk.LEFT, padx=3, ipadx=6, ipady=2)
     tb.Button(btn_frame, text="Cancel", command=settings_win.destroy,
               bootstyle=(SECONDARY, OUTLINE)).pack(side=tk.LEFT, padx=3, ipadx=6, ipady=2)
 
