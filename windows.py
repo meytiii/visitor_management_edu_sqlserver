@@ -307,7 +307,7 @@ def open_server_settings(parent):
     btn_test.pack(side=tk.LEFT, padx=8, ipady=3)
 
     btn_save = tb.Button(top_btn_frame, text="Save Settings", command=save_settings,
-                         bootstyle=SUCCESS, width=18)
+                         bootstyle=SUCCESS, width=20)
     btn_save.pack(side=tk.LEFT, padx=8, ipady=3)
 
     # Cancel button (centered, also larger)
