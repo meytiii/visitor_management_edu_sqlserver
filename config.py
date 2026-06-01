@@ -13,9 +13,6 @@ if not os.path.exists(APP_DATA_DIR):
     except OSError as e:
         messagebox.showerror("Error", f"Could not create database folder:\n{e}")
 
-import json
-import sys
-
 # ----------------------------------------------------------------------
 # DYNAMIC SERVER CONFIGURATION
 # ----------------------------------------------------------------------
@@ -44,7 +41,6 @@ def _rebuild_connection_string():
 def load_config():
     global SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER
     if not os.path.exists(CONFIG_FILE):
-        # Use defaults
         SQL_SERVER = DEFAULT_SETTINGS["sql_server"]
         SQL_DATABASE = DEFAULT_SETTINGS["sql_database"]
         SQL_USER = DEFAULT_SETTINGS["sql_user"]
@@ -64,7 +60,6 @@ def load_config():
         _rebuild_connection_string()
     except Exception as e:
         print(f"Error loading server config: {e}")
-        # Fallback to defaults
         SQL_SERVER = DEFAULT_SETTINGS["sql_server"]
         SQL_DATABASE = DEFAULT_SETTINGS["sql_database"]
         SQL_USER = DEFAULT_SETTINGS["sql_user"]

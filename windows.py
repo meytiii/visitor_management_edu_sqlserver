@@ -196,7 +196,7 @@ def open_server_settings(parent):
     main_frame = tk.Frame(card_frame, bg="white", padx=20, pady=20)
     main_frame.pack(fill=tk.BOTH, expand=True)
 
-    # Title (English)
+    # Title
     tb.Label(main_frame, text="⚙️ SQL Server Connection Settings", font=(FONT_MAIN, 13, "bold"),
              bootstyle=PRIMARY, background="white").pack(pady=(0, 20))
 
@@ -301,7 +301,6 @@ def open_server_settings(parent):
         else:
             messagebox.showerror("Error", "Failed to save settings.\nCheck file permissions.", parent=settings_win)
 
-    # Test and Save buttons (larger, side by side, centered)
     btn_test = tb.Button(top_btn_frame, text="Test Connection", command=test_connection,
                          bootstyle=(INFO, OUTLINE), width=18)
     btn_test.pack(side=tk.LEFT, padx=8, ipady=3)
@@ -310,7 +309,6 @@ def open_server_settings(parent):
                          bootstyle=SUCCESS, width=20)
     btn_save.pack(side=tk.LEFT, padx=8, ipady=3)
 
-    # Cancel button (centered, also larger)
     btn_cancel = tb.Button(bottom_btn_frame, text="Cancel", command=settings_win.destroy,
                            bootstyle=(SECONDARY, OUTLINE), width=18)
     btn_cancel.pack(ipady=3)
@@ -494,7 +492,6 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
         item_text = user_list.get(sel[0])
         username = item_text.split("  (")[-1].replace(")", "").strip()
 
-        # Fetch current user data
         users = database.get_all_users()
         user_data = None
         for u, r, fname in users:
@@ -623,14 +620,12 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
                     status_label.config(text="❌ تکرار رمز عبور مطابقت ندارد", bootstyle=DANGER)
                     return
 
-            # Check username uniqueness if changed
             if new_username != username:
                 existing_users = [u for u, _, _ in database.get_all_users()]
                 if new_username in existing_users:
                     status_label.config(text="❌ نام کاربری تکراری است", bootstyle=DANGER)
                     return
 
-            # Prevent demoting last admin
             if (current_user and username == current_user and
                 user_data[1] == 'admin' and new_role != 'admin'):
                 users = database.get_all_users()
@@ -668,7 +663,6 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
                         app.title(f"سامانه مدیریت ورود و خروج (اداره حراست)   |   کاربر: {new_fullname}")
                     if new_role != app.current_role:
                         app.current_role = new_role
-                        # Close any open management windows
                         for child in app.winfo_children():
                             if isinstance(child, tk.Toplevel):
                                 if child.title() in ["پنل مدیریت", "مدیریت کاربران", "آمار تردد", "تحلیل آماری تردد", "خروجی اکسل لاگ حسابرسی"]:
@@ -792,7 +786,6 @@ def show_heatmap_analytics(app):
         m_name = cb_month.get()
         d = cb_day.get()
         
-        # Get data from database
         data = database.get_hourly_stats(year=y if y else None,
                                           month_name=m_name if m_name in config.PERSIAN_MONTHS else None,
                                           day=d if d else None)
@@ -954,8 +947,6 @@ def open_search_window(app):
         for i in tree.get_children():
             tree.delete(i)
         for r in rows:
-            # r is (id, visitor_name, national_id, employee_to_meet, department, entry_time_str, shamsi_date, exit_time, created_by)
-            # entry_time_str already formatted as HH:MM
             tree.insert("", tk.END, values=(r[0], r[1], r[2], r[3], r[4], r[5], r[6] or "", r[7] or "", r[8] or "---"))
         
         start_idx = (current_page - 1) * items_per_page + 1 if total_records > 0 else 0
@@ -985,8 +976,6 @@ def open_search_window(app):
 
     def export_to_excel():
         filters = current_filters
-        # For export, we need all records matching filters, not paginated
-        # We'll use search_visitors with a large page size
         total, all_rows = database.search_visitors(filters, page=1, items_per_page=1000000)
         if not all_rows:
             messagebox.showwarning("هشدار", "رکوردی برای خروجی گرفتن با این فیلترها وجود ندارد", parent=search_win)
@@ -1056,7 +1045,6 @@ def open_search_window(app):
         tb.Combobox(t_frame, textvariable=h_var, values=[str(i).zfill(2) for i in range(7, 21)], width=4, font=(FONT_MAIN, 12), justify='center', state='readonly').pack(side=tk.RIGHT, padx=5)
         
         try:
-            # entry_time in vals[5] is already formatted as HH:MM from fetch
             entry_time_only = vals[5]
             info_lbl = tb.Label(p_frame, text=f"ساعت ورود: {entry_time_only}   |   تاریخ: {entry_shamsi_date}",
                                 font=(FONT_MAIN, 11), bootstyle=(INFO, INVERSE), padding=10, anchor="center")
@@ -1071,7 +1059,6 @@ def open_search_window(app):
                 messagebox.showerror("خطا", "لطفاً ساعت و دقیقه را انتخاب کنید", parent=popup)
                 return
             
-            # Check exit time not before entry time (optional)
             try:
                 entry_time_str = vals[5]  # already HH:MM
                 entry_h, entry_m = map(int, entry_time_str.split(':'))
