@@ -203,6 +203,7 @@ AUDIT_EVENT_TYPES = [
     "backup_restored",
     "data_exported",
     "developer_mode_enabled",
+    "visitor_entry_failed",
     "error"
 ]
 
