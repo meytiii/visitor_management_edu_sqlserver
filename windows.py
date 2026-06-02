@@ -1401,8 +1401,8 @@ def open_developer_mode(app, on_self_role_change=None):
         ("نمودار تحلیل ترافیک", lambda: show_heatmap_analytics(app), WARNING),
         ("لاگ حسابرسی (خروجی اکسل)",lambda: export_audit_log_excel(dev_win),INFO),
         ("افزودن ۱۰۰ رکورد آزمایشی", database.add_dummy_data, (SUCCESS, OUTLINE)),
-        # ("حذف رکوردهای آزمایشی", database.delete_dev_records, (DANGER, OUTLINE)),  # optional
-        # ("پاکسازی کامل دیتابیس", database.delete_all_records, DANGER)   # REMOVED - dangerous
+        ("پشتیبان‌گیری از دیتابیس", lambda: utils.do_backup(dev_win, getattr(app, 'current_username', 'admin')), SUCCESS),
+        ("بازیابی از فایل پشتیبان", lambda: utils.do_restore(dev_win, getattr(app, 'current_username', 'admin')), (WARNING, OUTLINE)),
     ]
     
     for text, cmd, style in buttons:
