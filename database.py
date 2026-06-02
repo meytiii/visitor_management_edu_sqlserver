@@ -4,29 +4,152 @@ import hashlib
 import binascii
 import os
 import time
+import threading
 from datetime import datetime
+from queue import Queue, Empty
 import jdatetime
 from tkinter import messagebox
 import config
 
 DEPARTMENT_LIST = config.DEPARTMENT_LIST
 
-# --- CACHE CONFIGURATION ---
-_cache = {
-    "employees": {
-        "data": [],
-        "timestamp": 0
-    }
-}
-CACHE_DURATION = 300
+# ----------------------------------------------------------------------
+# CONNECTION POOL WITH EXPONENTIAL BACKOFF RETRY
+# ----------------------------------------------------------------------
+class ConnectionPool:
+    _instance = None
+    _lock = threading.Lock()
+    
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
+        return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+        self._pool = Queue(maxsize=config.POOL_MAX_SIZE)
+        self._pool_lock = threading.Lock()
+        self._active_count = 0
+        self._max_size = config.POOL_MAX_SIZE
+        self._timeout = config.POOL_TIMEOUT
+        self._initialized = True
+    
+    def _create_connection(self):
+        """Create a fresh database connection."""
+        return pyodbc.connect(
+            config.SQL_CONNECTION_STRING,
+            autocommit=False,
+            timeout=3
+        )
+    
+    def _get_with_retry(self):
+        """Get connection with exponential backoff retry."""
+        max_attempts = config.CONN_RETRY_MAX_ATTEMPTS
+        base_delay = config.CONN_RETRY_BASE_DELAY
+        max_delay = config.CONN_RETRY_MAX_DELAY
+        multiplier = config.CONN_RETRY_BACKOFF_MULTIPLIER
+        
+        last_exception = None
+        
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return self._create_connection()
+            except Exception as e:
+                last_exception = e
+                if attempt == max_attempts:
+                    break
+                
+                # Calculate delay with exponential backoff + jitter
+                delay = min(base_delay * (multiplier ** (attempt - 1)), max_delay)
+                jitter = random.uniform(0, delay * 0.3)  # 30% jitter
+                sleep_time = delay + jitter
+                
+                print(f"[Connection Retry] Attempt {attempt}/{max_attempts} failed. "
+                      f"Retrying in {sleep_time:.2f}s... Error: {e}")
+                time.sleep(sleep_time)
+        
+        raise last_exception
+    
+    def get_connection(self):
+        """Get connection from pool or create new one with retry logic."""
+        # Try to get from pool first
+        try:
+            conn = self._pool.get(timeout=0.5)
+            # Validate connection is still alive
+            try:
+                conn.execute("SELECT 1")
+                return conn
+            except:
+                conn.close()
+                with self._pool_lock:
+                    self._active_count -= 1
+                # Fall through to create new
+        except Empty:
+            pass
+        
+        # Create new connection with retry
+        with self._pool_lock:
+            if self._active_count < self._max_size:
+                self._active_count += 1
+            else:
+                # Pool full, wait for available connection
+                return self._pool.get(timeout=self._timeout)
+        
+        return self._get_with_retry()
+    
+    def return_connection(self, conn, is_healthy=True):
+        """Return connection to pool or close it."""
+        if not is_healthy:
+            try:
+                conn.close()
+            except:
+                pass
+            with self._pool_lock:
+                self._active_count -= 1
+            return
+        
+        try:
+            self._pool.put(conn, timeout=1.0)
+        except:
+            # Pool full or error, close connection
+            try:
+                conn.close()
+            except:
+                pass
+            with self._pool_lock:
+                self._active_count -= 1
+    
+    def stats(self):
+        """Return current pool statistics."""
+        return {
+            "pool_size": self._pool.qsize(),
+            "active_count": self._active_count,
+            "max_size": self._max_size
+        }
 
-# --- CONNECTION HELPERS ---
+
+# Global pool instance
+_pool_instance = ConnectionPool()
+
+
 def get_connection():
-    try:
-        conn = pyodbc.connect(config.SQL_CONNECTION_STRING, autocommit=False, timeout=3)
-        return conn
-    except Exception as e:
-        raise
+    """Legacy wrapper — now uses pooled connections with retry."""
+    return _pool_instance.get_connection()
+
+
+def release_connection(conn, is_healthy=True):
+    """Return connection to pool. Call this instead of conn.close()."""
+    _pool_instance.return_connection(conn, is_healthy)
+
+
+def pool_stats():
+    """Get current connection pool statistics."""
+    return _pool_instance.stats()
+
 
 class DBConnection:
     def __enter__(self):
@@ -34,11 +157,13 @@ class DBConnection:
         return self.conn
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        is_healthy = exc_type is None
         if exc_type:
             self.conn.rollback()
         else:
             self.conn.commit()
-        self.conn.close()
+        release_connection(self.conn, is_healthy)
+
 
 # --- HASHING UTILS ---
 def hash_password(password):
@@ -140,6 +265,14 @@ def setup_database():
             print("Default Admin created")
 
 # --- CACHED DATA FETCHING ---
+_cache = {
+    "employees": {
+        "data": [],
+        "timestamp": 0
+    }
+}
+CACHE_DURATION = 300
+
 def get_employee_suggestions(force_refresh=False):
     global _cache
     now = time.time()

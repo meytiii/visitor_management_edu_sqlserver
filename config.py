@@ -205,3 +205,13 @@ AUDIT_EVENT_TYPES = [
     "developer_mode_enabled",
     "error"
 ]
+
+# ----------------------------------------------------------------------
+# CONNECTION POOL & RETRY CONFIGURATION
+# ----------------------------------------------------------------------
+POOL_MAX_SIZE = 10
+POOL_TIMEOUT = 30
+CONN_RETRY_MAX_ATTEMPTS = 5
+CONN_RETRY_BASE_DELAY = 1.0
+CONN_RETRY_MAX_DELAY = 30.0
+CONN_RETRY_BACKOFF_MULTIPLIER = 2.0
