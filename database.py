@@ -554,7 +554,119 @@ def add_visitor(visitor_name, national_id, employee_to_meet, department, entry_t
             new_id = cursor.fetchone()[0]
         
         return int(new_id) if new_id is not None else 0
-    
+
+
+# ----------------------------------------------------------------------
+# BACKUP & RESTORE FUNCTIONS
+# ----------------------------------------------------------------------
+def get_all_visitors_for_backup():
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, visitor_name, national_id, employee_to_meet, department,
+                   entry_time, shamsi_date, exit_time, created_by
+            FROM visitors
+            ORDER BY id
+        """)
+        return cursor.fetchall()
+
+def get_all_users_for_backup():
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, username, password, role, full_name
+            FROM users
+            ORDER BY id
+        """)
+        return cursor.fetchall()
+
+def get_all_audit_logs_for_backup():
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, shamsi_date, shamsi_time, event_type, user_name,
+                   visitor_id, visitor_name, national_id, employee_to_meet,
+                   department, details, created_at
+            FROM audit_log
+            ORDER BY id
+        """)
+        return cursor.fetchall()
+
+def get_visitor_by_natid_employee_date(national_id, employee_to_meet, shamsi_date, entry_time):
+    try:
+        with DBConnection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id FROM visitors
+                WHERE national_id = ?
+                  AND employee_to_meet = ?
+                  AND shamsi_date = ?
+                  AND entry_time = ?
+            """, (national_id, employee_to_meet, shamsi_date, entry_time))
+            return cursor.fetchone() is not None
+    except:
+        return False
+
+def get_user_by_username(username):
+    """Check if a user already exists."""
+    try:
+        with DBConnection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+            return cursor.fetchone() is not None
+    except:
+        return False
+
+def get_audit_log_duplicate(shamsi_date, shamsi_time, event_type, user_name, details):
+    """Check if an audit log entry already exists."""
+    try:
+        with DBConnection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id FROM audit_log
+                WHERE shamsi_date = ?
+                  AND shamsi_time = ?
+                  AND event_type = ?
+                  AND user_name = ?
+                  AND details = ?
+            """, (shamsi_date, shamsi_time, event_type, user_name, details))
+            return cursor.fetchone() is not None
+    except:
+        return False
+
+def insert_visitor_from_backup(visitor_name, national_id, employee_to_meet, department,
+                                entry_time, shamsi_date, exit_time, created_by):
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO visitors 
+                (visitor_name, national_id, employee_to_meet, department, entry_time, shamsi_date, exit_time, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (visitor_name, national_id, employee_to_meet, department, entry_time, shamsi_date, exit_time, created_by))
+
+def insert_user_from_backup(username, password, role, full_name):
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO users (username, password, role, full_name)
+            VALUES (?, ?, ?, ?)
+        """, (username, password, role, full_name))
+
+def insert_audit_log_from_backup(shamsi_date, shamsi_time, event_type, user_name,
+                                  visitor_id, visitor_name, national_id,
+                                  employee_to_meet, department, details, created_at):
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO audit_log
+                (shamsi_date, shamsi_time, event_type, user_name,
+                 visitor_id, visitor_name, national_id,
+                 employee_to_meet, department, details, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (shamsi_date, shamsi_time, event_type, user_name,
+              visitor_id, visitor_name, national_id,
+              employee_to_meet, department, details, created_at))
+
 # --- ADDITIONAL FUNCTIONS FOR WINDOWS.PY ---
 
 def get_daily_stats(shamsi_date: str):
@@ -596,7 +708,6 @@ def get_hourly_stats(year=None, month_name=None, day=None):
         cursor = conn.cursor()
         cursor.execute(query, params)
         rows = cursor.fetchall()
-        # Convert to list of tuples (hour, count)
         return [(row[0], row[1]) for row in rows]
 
 def search_visitors(filters: dict, page: int, items_per_page: int):
