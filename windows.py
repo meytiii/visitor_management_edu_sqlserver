@@ -190,14 +190,14 @@ def open_server_settings(parent):
         except Exception:
             pass
 
-    # White card frame
+    #White card frame
     card_frame = tk.Frame(settings_win, bg="white", bd=0, highlightthickness=0)
     card_frame.place(relx=0.5, rely=0.5, anchor="center", width=460, height=650)
 
     main_frame = tk.Frame(card_frame, bg="white", padx=20, pady=20)
     main_frame.pack(fill=tk.BOTH, expand=True)
 
-    # Title
+    #Title
     tb.Label(main_frame, text="⚙️ SQL Server Connection Settings", font=(FONT_MAIN, 13, "bold"),
              bootstyle=PRIMARY, background="white").pack(pady=(0, 20))
 
@@ -556,19 +556,19 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
             bootstyle=PRIMARY, anchor="center", background=''
         ).pack(pady=(10, 15))
 
-        # Full name field
+        #Full name field
         tb.Label(form_frame, text=": نام و نام خانوادگی", font=(FONT_MAIN, 12), background='').pack(anchor="e", pady=(5, 2))
         fullname_entry = tb.Entry(form_frame, justify='center', font=(FONT_MAIN, 12))
         fullname_entry.insert(0, user_data[2] if user_data[2] else "")
         fullname_entry.pack(fill=tk.X, pady=(0, 10))
 
-        # Username field
+        #Username field
         tb.Label(form_frame, text=": نام کاربری", font=(FONT_MAIN, 12), background='').pack(anchor="e", pady=(5, 2))
         username_entry = tb.Entry(form_frame, justify='center', font=(FONT_MAIN, 12))
         username_entry.insert(0, username)
         username_entry.pack(fill=tk.X, pady=(0, 10))
 
-        # Role selection
+        #Role selection
         tb.Label(form_frame, text=": نقش کاربری", font=(FONT_MAIN, 12), background='').pack(anchor="e", pady=(5, 2))
         role_var_edit = tk.StringVar(value=user_data[1])
         role_frame = tk.Frame(form_frame, bg='')
@@ -582,7 +582,7 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
             bootstyle=PRIMARY
         ).pack(side=tk.RIGHT, padx=10)
 
-        # Password fields
+        #Password fields
         tb.Label(
             form_frame, text=": رمز عبور جدید (اختیاری)", font=(FONT_MAIN, 12),
             background=''

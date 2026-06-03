@@ -39,7 +39,6 @@ class ConnectionPool:
         self._initialized = True
     
     def _create_connection(self):
-        """Create a fresh database connection."""
         return pyodbc.connect(
             config.SQL_CONNECTION_STRING,
             autocommit=False,
@@ -47,7 +46,6 @@ class ConnectionPool:
         )
     
     def _get_with_retry(self):
-        """Get connection with exponential backoff retry."""
         max_attempts = config.CONN_RETRY_MAX_ATTEMPTS
         base_delay = config.CONN_RETRY_BASE_DELAY
         max_delay = config.CONN_RETRY_MAX_DELAY
@@ -63,9 +61,8 @@ class ConnectionPool:
                 if attempt == max_attempts:
                     break
                 
-                # Calculate delay with exponential backoff + jitter
                 delay = min(base_delay * (multiplier ** (attempt - 1)), max_delay)
-                jitter = random.uniform(0, delay * 0.3)  # 30% jitter
+                jitter = random.uniform(0, delay * 0.3)
                 sleep_time = delay + jitter
                 
                 print(f"[Connection Retry] Attempt {attempt}/{max_attempts} failed. "
@@ -75,11 +72,8 @@ class ConnectionPool:
         raise last_exception
     
     def get_connection(self):
-        """Get connection from pool or create new one with retry logic."""
-        # Try to get from pool first
         try:
             conn = self._pool.get(timeout=0.5)
-            # Validate connection is still alive
             try:
                 conn.execute("SELECT 1")
                 return conn
@@ -87,22 +81,18 @@ class ConnectionPool:
                 conn.close()
                 with self._pool_lock:
                     self._active_count -= 1
-                # Fall through to create new
         except Empty:
             pass
         
-        # Create new connection with retry
         with self._pool_lock:
             if self._active_count < self._max_size:
                 self._active_count += 1
             else:
-                # Pool full, wait for available connection
                 return self._pool.get(timeout=self._timeout)
         
         return self._get_with_retry()
     
     def return_connection(self, conn, is_healthy=True):
-        """Return connection to pool or close it."""
         if not is_healthy:
             try:
                 conn.close()
@@ -115,7 +105,6 @@ class ConnectionPool:
         try:
             self._pool.put(conn, timeout=1.0)
         except:
-            # Pool full or error, close connection
             try:
                 conn.close()
             except:
@@ -124,32 +113,25 @@ class ConnectionPool:
                 self._active_count -= 1
     
     def stats(self):
-        """Return current pool statistics."""
         return {
             "pool_size": self._pool.qsize(),
             "active_count": self._active_count,
             "max_size": self._max_size
         }
 
-
-# Global pool instance
 _pool_instance = ConnectionPool()
-
 
 def get_connection():
     """Legacy wrapper — now uses pooled connections with retry."""
     return _pool_instance.get_connection()
 
-
 def release_connection(conn, is_healthy=True):
     """Return connection to pool. Call this instead of conn.close()."""
     _pool_instance.return_connection(conn, is_healthy)
 
-
 def pool_stats():
     """Get current connection pool statistics."""
     return _pool_instance.stats()
-
 
 class DBConnection:
     def __enter__(self):
@@ -163,7 +145,6 @@ class DBConnection:
         else:
             self.conn.commit()
         release_connection(self.conn, is_healthy)
-
 
 # --- HASHING UTILS ---
 def hash_password(password):
@@ -187,7 +168,7 @@ def setup_database():
     with DBConnection() as conn:
         cursor = conn.cursor()
         
-        # Visitors table
+        #Visitors table
         cursor.execute("""
             IF OBJECT_ID('visitors', 'U') IS NULL
             CREATE TABLE visitors (
@@ -203,7 +184,7 @@ def setup_database():
             )
         """)
         
-        # Users table
+        #Users table
         cursor.execute("""
             IF OBJECT_ID('users', 'U') IS NULL
             CREATE TABLE users (
@@ -215,7 +196,7 @@ def setup_database():
             )
         """)
         
-        # Audit log table
+        #Audit log table
         cursor.execute("""
             IF OBJECT_ID('audit_log', 'U') IS NULL
             CREATE TABLE audit_log (
@@ -317,7 +298,6 @@ def authenticate_user(username, password):
             else:
                 return False, None, None, "نام کاربری یافت نشد"
     except Exception as e:
-        # Connection or other database error
         return False, None, None, f"خطا در اتصال به پایگاه داده:\n{str(e)}"
 
 def create_user(username, password, full_name, role="guard"):
