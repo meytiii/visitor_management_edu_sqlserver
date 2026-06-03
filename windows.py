@@ -804,41 +804,81 @@ def show_heatmap_analytics(app):
     ensure_fonts()
     analytics_win = tb.Toplevel(app)
     analytics_win.title("تحلیل آماری تردد")
-    analytics_win.geometry("900x650")
-    analytics_win.resizable(False,False)
+    analytics_win.geometry("1000x800")
+    analytics_win.resizable(False, False)
     try: analytics_win.iconbitmap(utils.resource_path('app_icon.ico'))
     except: pass
     
+    # ---------- FILTER FRAME ----------
     filter_frame = tb.Frame(analytics_win, padding=10)
     filter_frame.pack(fill=tk.X)
     
-    tb.Label(filter_frame, text=":فیلتر زمانی", font=(FONT_MAIN, 12, "bold")).pack(side=tk.RIGHT, padx=10)
-    cb_day = tb.Combobox(filter_frame, values=[""] + [str(i) for i in range(1, 32)], width=3, state="readonly", justify='center')
-    cb_day.pack(side=tk.RIGHT, padx=2)
-    tb.Label(filter_frame, text="روز").pack(side=tk.RIGHT)
-    cb_month = tb.Combobox(filter_frame, values=[""] + config.PERSIAN_MONTHS, width=10, state="readonly", justify='center')
-    cb_month.pack(side=tk.RIGHT, padx=2)
-    tb.Label(filter_frame, text="ماه").pack(side=tk.RIGHT)
-    cb_year = tb.Combobox(filter_frame, values=[""] + [str(i) for i in range(1400, 1411)], width=5, state="readonly", justify='center')
-    cb_year.pack(side=tk.RIGHT, padx=2)
-    tb.Label(filter_frame, text="سال").pack(side=tk.RIGHT)
+    # Time filters row
+    time_frame = tb.Frame(filter_frame)
+    time_frame.pack(fill=tk.X)
     
+    tb.Label(time_frame, text=":فیلتر زمانی", font=(FONT_MAIN, 12, "bold")).pack(side=tk.RIGHT, padx=10)
+    cb_day = tb.Combobox(time_frame, values=[""] + [str(i) for i in range(1, 32)], width=3, state="readonly", justify='center')
+    cb_day.pack(side=tk.RIGHT, padx=2)
+    tb.Label(time_frame, text="روز").pack(side=tk.RIGHT)
+    cb_month = tb.Combobox(time_frame, values=[""] + config.PERSIAN_MONTHS, width=10, state="readonly", justify='center')
+    cb_month.pack(side=tk.RIGHT, padx=2)
+    tb.Label(time_frame, text="ماه").pack(side=tk.RIGHT)
+    cb_year = tb.Combobox(time_frame, values=[""] + [str(i) for i in range(1400, 1411)], width=5, state="readonly", justify='center')
+    cb_year.pack(side=tk.RIGHT, padx=2)
+    tb.Label(time_frame, text="سال").pack(side=tk.RIGHT)
+    
+    # Department + buttons row
+    dept_frame = tb.Frame(filter_frame)
+    dept_frame.pack(fill=tk.X, pady=(10, 0))
+    
+    tb.Label(dept_frame, text=":واحد مربوطه", font=(FONT_MAIN, 12, "bold")).pack(side=tk.RIGHT, padx=10)
+    cb_dept = tb.Combobox(dept_frame, values=[""] + config.DEPARTMENT_LIST, width=25, state="readonly", justify='right')
+    cb_dept.pack(side=tk.RIGHT, padx=2)
+    
+    tb.Button(dept_frame, text="نمایش نمودار", command=lambda: update_chart(), bootstyle=PRIMARY).pack(side=tk.LEFT, padx=5)
+    tb.Button(dept_frame, text="حذف فیلترها", command=lambda: reset_filters(), bootstyle=(DANGER, OUTLINE)).pack(side=tk.LEFT, padx=5)
+    
+    # ---------- CHART CONTAINER ----------
     chart_container = tb.Frame(analytics_win, padding=10)
     chart_container.pack(fill=tk.BOTH, expand=True)
-
+    
+    # ---------- TOP 3 DEPARTMENTS ----------
+    top3_frame = tb.Frame(analytics_win, padding=(10, 15))
+    top3_frame.pack(fill=tk.X)
+    
     def update_chart():
         for widget in chart_container.winfo_children():
             widget.destroy()
+        for widget in top3_frame.winfo_children():
+            widget.destroy()
+            
         y = cb_year.get()
         m_name = cb_month.get()
         d = cb_day.get()
+        dept = cb_dept.get()
         
-        data = database.get_hourly_stats(year=y if y else None,
-                                          month_name=m_name if m_name in config.PERSIAN_MONTHS else None,
-                                          day=d if d else None)
+        data = database.get_hourly_stats(
+            year=y if y else None,
+            month_name=m_name if m_name in config.PERSIAN_MONTHS else None,
+            day=d if d else None,
+            department=dept if dept else None
+        )
+        
+        top3 = database.get_top_departments(
+            year=y if y else None,
+            month_name=m_name if m_name in config.PERSIAN_MONTHS else None,
+            day=d if d else None
+        )
         
         if not data:
             tb.Label(chart_container, text="اطلاعاتی با این فیلتر یافت نشد", font=(FONT_MAIN, 14), bootstyle=SECONDARY).pack(pady=50)
+            if top3:
+                tb.Label(top3_frame, text="🏆 ۳ واحد پرتردد:", font=(FONT_MAIN, 12, "bold"), bootstyle=PRIMARY).pack(side=tk.RIGHT, padx=10)
+                for i, (dept_name, count) in enumerate(top3, 1):
+                    tb.Label(top3_frame, text=f"{i}- {dept_name} ({count})", font=(FONT_TABLE, 10), bootstyle=INFO).pack(side=tk.RIGHT, padx=10)
+            else:
+                tb.Label(top3_frame, text="واحدی یافت نشد", font=(FONT_MAIN, 11), bootstyle=SECONDARY).pack(side=tk.RIGHT)
             return
         
         hours_found, counts_found = zip(*data) if data else ([], [])
@@ -865,6 +905,8 @@ def show_heatmap_analytics(app):
             title_context += f" - {m_name}"
         if d:
             title_context += f" - روز {d}"
+        if dept:
+            title_context += f" - {dept}"
         ax.set_title(utils.make_farsi(f"تحلیل تردد - {title_context}"), fontsize=14, fontname='Tahoma')
         ax.grid(axis='y', linestyle='--', alpha=0.7, zorder=0)
         
@@ -875,15 +917,24 @@ def show_heatmap_analytics(app):
         canvas = FigureCanvasTkAgg(fig, master=chart_container)
         canvas.draw()
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-
+        
+        # Top 3 display
+        if top3:
+            tb.Label(top3_frame, text="🏆 ۳ واحد پرتردد:", font=(FONT_MAIN, 12, "bold"), bootstyle=PRIMARY).pack(side=tk.RIGHT, padx=10)
+            for i, (dept_name, count) in enumerate(top3, 1):
+                rank_colors = {1: "#B8860B", 2: "#708090", 3: "#8B4513"}
+                color = rank_colors.get(i, "#555555")
+                tb.Label(top3_frame, text=f"{i}- {dept_name} ({count})", font=(FONT_TABLE, 10), foreground=color).pack(side=tk.RIGHT, padx=10)
+        else:
+            tb.Label(top3_frame, text="واحدی یافت نشد", font=(FONT_MAIN, 11), bootstyle=SECONDARY).pack(side=tk.RIGHT)
+    
     def reset_filters():
         cb_year.set("")
         cb_month.set("")
         cb_day.set("")
+        cb_dept.set("")
         update_chart()
-
-    tb.Button(filter_frame, text="نمایش نمودار", command=update_chart, bootstyle=PRIMARY).pack(side=tk.LEFT, padx=5)
-    tb.Button(filter_frame, text="حذف فیلترها", command=reset_filters, bootstyle=(DANGER, OUTLINE)).pack(side=tk.LEFT, padx=5)
+    
     update_chart()
 
 def open_search_window(app):

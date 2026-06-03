@@ -683,7 +683,7 @@ def get_daily_stats(shamsi_date: str):
         no_exit = cursor.fetchone()[0]
         return total, no_exit
 
-def get_hourly_stats(year=None, month_name=None, day=None):
+def get_hourly_stats(year=None, month_name=None, day=None, department=None):
     query = """
         SELECT 
             RIGHT('0' + CAST(DATEPART(hour, entry_time) AS VARCHAR(2)), 2) AS hour,
@@ -703,8 +703,40 @@ def get_hourly_stats(year=None, month_name=None, day=None):
     if day:
         query += " AND shamsi_date LIKE ?"
         params.append(f"%/{day.zfill(2)}")
+    if department:
+        query += " AND department = ?"
+        params.append(department)
     
     query += " GROUP BY DATEPART(hour, entry_time) ORDER BY hour"
+    
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        return [(row[0], row[1]) for row in rows]
+    
+def get_top_departments(year=None, month_name=None, day=None, limit=3):
+    query = f"""
+        SELECT TOP {limit}
+            department,
+            COUNT(*) AS cnt
+        FROM visitors
+        WHERE 1=1
+    """
+    params = []
+    
+    if year:
+        query += " AND shamsi_date LIKE ?"
+        params.append(f"{year}%")
+    if month_name and month_name in config.PERSIAN_MONTHS:
+        month_num = config.PERSIAN_MONTHS.index(month_name) + 1
+        query += " AND shamsi_date LIKE ?"
+        params.append(f"%/{month_num:02d}/%")
+    if day:
+        query += " AND shamsi_date LIKE ?"
+        params.append(f"%/{day.zfill(2)}")
+    
+    query += " GROUP BY department ORDER BY cnt DESC"
     
     with DBConnection() as conn:
         cursor = conn.cursor()
