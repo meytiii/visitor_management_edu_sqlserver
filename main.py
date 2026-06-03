@@ -215,10 +215,11 @@ def submit_visitor():
         show_status(f"✓ ورود مهمان با شماره {visitor_id} با موفقیت ثبت شد", "green", duration=10000)
         update_employee_suggestions()
     except Exception as e:
-        database.log_audit("visitor_entry_failed",
+        database.log_audit("error",
+            user=getattr(app, 'current_username', 'سیستم'),
             visitor_name=visitor_name, 
             national_id=national_id, 
-            error=str(e))
+            details=f"Visitor entry failed: {str(e)}")
         messagebox.showerror("خطای پایگاه داده", f"خطا در ثبت اطلاعات: {e}")
 
 # --- CENTRAL CARD CONTAINER ---
@@ -372,7 +373,6 @@ def on_app_close():
     app.protocol("WM_DELETE_WINDOW", lambda: None)
     try:
         try:
-            database.log_audit("logout", user=getattr(app, "current_username", None))
             database.log_audit("app_closed", user=getattr(app, "current_username", None))
         except:
             pass
@@ -386,7 +386,6 @@ if __name__ == "__main__":
     def setup_db_thread():
         try:
             database.setup_database()
-            database.setup_audit_table()
         except Exception as e:
             print(f"Database setup error: {e}")
             def show_warning():

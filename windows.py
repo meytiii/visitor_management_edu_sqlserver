@@ -155,7 +155,7 @@ def show_login_screen(app, on_success_callback):
     canvas.create_window(200, 260, window=btn_login, width=150, height=40)
 
     def on_login_window_close():
-        database.log_audit("app_closed", user=getattr(app, "current_user", None))
+        database.log_audit("app_closed", user=getattr(app, "current_username", None))
         app.destroy()
 
     login_win.protocol("WM_DELETE_WINDOW", on_login_window_close)
@@ -442,6 +442,11 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
 
         ok, msg = database.create_user(u, p, fname, r)
         if ok:
+            database.log_audit(
+                "user_created",
+                user=current_user,
+                details=f"Created user: {u} ({fname}), role: {r}"
+            )
             messagebox.showinfo("موفق", f"کاربر {fname} با موفقیت ایجاد شد", parent=um_win)
             for ent in [new_fullname_ent, new_user_ent, new_pass_ent]:
                 ent.delete(0, tk.END)
@@ -468,6 +473,11 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
         ):
             ok, msg = database.delete_user(username)
             if ok:
+                database.log_audit(
+                    "user_deleted",
+                    user=current_user,
+                    details=f"Deleted user: {username}"
+                )
                 refresh_list()
                 on_user_select()
                 if app and current_user and username == current_user:
@@ -986,6 +996,12 @@ def open_search_window(app):
         )
         if file_path:
             df.to_excel(file_path, index=False)
+            username = getattr(app, 'current_username', 'سیستم') if app else 'سیستم'
+            database.log_audit(
+                "data_exported",
+                user=username,
+                details=f"Excel export: {os.path.basename(file_path)} | Records: {len(all_rows)}"
+            )
             messagebox.showinfo("موفق", f"فایل اکسل با موفقیت ذخیره شد:\n{file_path}", parent=search_win)
 
     def on_tree_double_click(event):
@@ -1073,11 +1089,10 @@ def open_search_window(app):
                 if success:
                     database.log_audit(
                         "visitor_exit_recorded",
+                        user=getattr(app, 'current_username', 'سیستم'),
                         visitor_id=visitor_id,
                         visitor_name=visitor_name,
-                        exit_time=exit_time_str,
-                        entry_shamsi_date=entry_shamsi_date,
-                        operator=getattr(app, 'current_username', None)
+                        details=f"Exit time: {exit_time_str} | Entry date: {entry_shamsi_date}"
                     )
                     popup.destroy()
                     fetch_and_display_records(current_filters)
@@ -1103,7 +1118,7 @@ def open_search_window(app):
     
     search_action()
 
-def export_audit_log_excel(parent):
+def export_audit_log_excel(parent, app=None):
     ensure_fonts()
 
     popup = tb.Toplevel(parent)
@@ -1202,6 +1217,13 @@ def export_audit_log_excel(parent):
         )
         if not file_path:
             return
+
+        username = getattr(app, 'current_username', 'سیستم') if app else 'سیستم'
+        database.log_audit(
+            "data_exported",
+            user=username,
+            details=f"Audit log Excel export: {os.path.basename(file_path)} | Records: {len(rows)}"
+        )
 
         col_names = [
             "شناسه",
@@ -1399,7 +1421,7 @@ def open_developer_mode(app, on_self_role_change=None):
         ("مدیریت کاربران", lambda: open_user_manager(dev_win, app=app, current_user=app.current_username, on_self_role_change=on_self_role_change), PRIMARY),
         ("تعداد ورودی/خروجی های ثبت شده", lambda: show_daily_stats_ui(dev_win), INFO),
         ("نمودار تحلیل ترافیک", lambda: show_heatmap_analytics(app), WARNING),
-        ("لاگ حسابرسی (خروجی اکسل)",lambda: export_audit_log_excel(dev_win),INFO),
+        ("لاگ حسابرسی (خروجی اکسل)",lambda: export_audit_log_excel(dev_win, app),INFO),
         ("افزودن ۱۰۰ رکورد آزمایشی", database.add_dummy_data, (SUCCESS, OUTLINE)),
         ("پشتیبان‌گیری از دیتابیس", lambda: utils.do_backup(dev_win, getattr(app, 'current_username', 'admin')), SUCCESS),
         ("بازیابی از فایل پشتیبان", lambda: utils.do_restore(dev_win, getattr(app, 'current_username', 'admin')), (WARNING, OUTLINE)),

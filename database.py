@@ -435,10 +435,7 @@ def delete_dev_records():
         messagebox.showerror("Error", f"Failed to delete dev records: {e}")
 
 # --- AUDIT LOG ---
-def setup_audit_table():
-    pass
-
-def log_audit(event_type: str, user=None, **kwargs):
+def log_audit(event_type: str, user=None, raise_on_error=False, **kwargs):
     if event_type not in config.AUDIT_EVENT_TYPES:
         print(f"[Audit Log Error] Invalid event type: {event_type}")
         return
@@ -459,6 +456,12 @@ def log_audit(event_type: str, user=None, **kwargs):
         department = kwargs.get("department")
         details = kwargs.get("details") or kwargs.get("error") or "No details provided"
         
+        extra = {k: v for k, v in kwargs.items() 
+                 if k not in ("visitor_id", "visitor_name", "national_id", 
+                              "employee_to_meet", "department", "details", "error")}
+        if extra and details == "No details provided":
+            details = str(extra)
+        
         with DBConnection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -474,6 +477,8 @@ def log_audit(event_type: str, user=None, **kwargs):
             ))
     except Exception as e:
         print(f"[Audit Log Error] {e}")
+        if raise_on_error:
+            raise
 
 def get_audit_logs(start_date: str, end_date: str) -> list:
     with DBConnection() as conn:
