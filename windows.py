@@ -95,21 +95,13 @@ def show_login_screen(app, on_success_callback):
     login_win = tb.Toplevel(app)
     login_win.title("ورود به سیستم")
     
-    width, height = 400, 350
+    width, height = 400, 400
     screen_width = app.winfo_screenwidth()
     screen_height = app.winfo_screenheight()
     x = (screen_width // 2) - (width // 2)
     y = (screen_height // 2) - (height // 2)
     login_win.geometry(f"{width}x{height}+{x}+{y}")
     login_win.resizable(False, False)
-
-    # ---------- MENU BAR ----------
-    menubar = tk.Menu(login_win)
-    tools_menu = tk.Menu(menubar, tearoff=0)
-    tools_menu.add_command(label="تنظیمات سرور", command=lambda: open_server_settings(login_win))
-    menubar.add_cascade(label="ابزارها", menu=tools_menu)
-    login_win.config(menu=menubar)
-    # ----------------------------------
 
     canvas = tk.Canvas(login_win, width=width, height=height, highlightthickness=0)
     canvas.pack(fill="both", expand=True)
@@ -127,6 +119,48 @@ def show_login_screen(app, on_success_callback):
 
     try: login_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
     except: pass
+
+    # --- CONNECTION STATUS BAR ---
+    status_text = canvas.create_text(200, 355, text="", fill="", font=(FONT_MAIN, 10))
+
+    def test_and_update_status():
+        server_display = config.SQL_SERVER.split('\\')[0] if config.SQL_SERVER else 'نامشخص'
+        canvas.itemconfig(status_text, 
+            text=f'در حال اتصال به "{server_display}"....', 
+            fill='#FF8C00')
+        login_win.update_idletasks()
+        
+        ok, err_msg = config.test_connection({
+            "sql_server": config.SQL_SERVER,
+            "sql_database": config.SQL_DATABASE,
+            "sql_user": config.SQL_USER,
+            "sql_password": config.SQL_PASSWORD,
+            "sql_driver": config.SQL_DRIVER
+        })
+        
+        if ok:
+            canvas.itemconfig(status_text,
+                text=f'ارتباط با سرور پایگاه داده "{server_display}" برقرار شد.',
+                fill='#4CAF50')
+            try:
+                database.setup_database()
+            except Exception as e:
+                print(f"Database setup error: {e}")
+        else:
+            canvas.itemconfig(status_text,
+                text='برقراری اتصال ناموفق بود. تنظیمات سرور را بررسی کنید.',
+                fill='#f44336')
+
+    def on_settings_changed():
+        test_and_update_status()
+
+    # ---------- MENU BAR ----------
+    menubar = tk.Menu(login_win)
+    tools_menu = tk.Menu(menubar, tearoff=0)
+    tools_menu.add_command(label="تنظیمات سرور", command=lambda: open_server_settings(login_win, on_settings_changed))
+    menubar.add_cascade(label="ابزارها", menu=tools_menu)
+    login_win.config(menu=menubar)
+    # ----------------------------------
 
     canvas.create_text(200, 40, text="سامانه مدیریت مراجعین💻", fill="#d6f7fd", font=(FONT_MAIN, 16, "bold"))
     
@@ -163,7 +197,9 @@ def show_login_screen(app, on_success_callback):
     login_win.bind('<Return>', lambda e: do_login())
     ent_user.focus()
 
-def open_server_settings(parent):
+    login_win.after(100, test_and_update_status)
+
+def open_server_settings(parent, on_settings_changed=None):
     import pyodbc
     ensure_fonts()
 
@@ -266,8 +302,12 @@ def open_server_settings(parent):
         ok, err_msg = config.test_connection(new_settings)
         if ok:
             messagebox.showinfo("Connection Test", "✅ Connection successful!", parent=settings_win)
+            if on_settings_changed:
+                on_settings_changed()
         else:
             messagebox.showerror("Connection Failed", err_msg, parent=settings_win)
+            if on_settings_changed:
+                on_settings_changed()
 
     def save_settings():
         new_settings = {
@@ -292,6 +332,8 @@ def open_server_settings(parent):
 
         if config.save_config(new_settings):
             messagebox.showinfo("Success", "Settings saved.\nThe application will now use these settings.", parent=settings_win)
+            if on_settings_changed:
+                on_settings_changed()
             settings_win.destroy()
         else:
             messagebox.showerror("Error", "Failed to save settings.\nCheck file permissions.", parent=settings_win)

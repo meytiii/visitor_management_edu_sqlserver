@@ -298,6 +298,10 @@ def setup_dashboard(username, role, full_name):
     app.current_role = role
     app.title(f"سامانه مدیریت ورود و خروج (اداره حراست)   |   کاربر: {full_name}")
     rebuild_dashboard_menu()
+    try:
+        update_employee_suggestions()
+    except:
+        pass
 
 try:
     for widget in [entry_visitor_name, combo_department]:
@@ -383,32 +387,6 @@ def on_app_close():
 app.protocol("WM_DELETE_WINDOW", on_app_close)
 
 if __name__ == "__main__":
-    def setup_db_thread():
-        try:
-            database.setup_database()
-        except Exception as e:
-            print(f"Database setup error: {e}")
-            def show_warning():
-                try:
-                    if app.winfo_exists():
-                        messagebox.showwarning(
-                            "اتصال به پایگاه داده",
-                            "امکان اتصال به سرور پیش‌فرض وجود ندارد.\n"
-                            "لطفاً از منوی 'ابزارها' -> 'تنظیمات سرور' اطلاعات صحیح را وارد کنید.",
-                            parent=app
-                        )
-                except:
-                    pass
-            app.after(500, show_warning)
-    
-    import threading
-    threading.Thread(target=setup_db_thread, daemon=True).start()
-    
-    try:
-        update_employee_suggestions()
-    except:
-        pass
-    
     start_quote_cycle()
     windows.show_login_screen(app, setup_dashboard)
     app.mainloop()
