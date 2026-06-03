@@ -381,6 +381,7 @@ def on_app_close():
         except:
             pass
     finally:
+        database.shutdown_pool()
         app.quit()
         app.destroy()
 

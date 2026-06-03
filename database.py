@@ -42,7 +42,7 @@ class ConnectionPool:
         return pyodbc.connect(
             config.SQL_CONNECTION_STRING,
             autocommit=False,
-            timeout=3
+            timeout=2
         )
     
     def _get_with_retry(self):
@@ -88,7 +88,7 @@ class ConnectionPool:
             if self._active_count < self._max_size:
                 self._active_count += 1
             else:
-                return self._pool.get(timeout=self._timeout)
+                return self._pool.get(timeout=5)
         
         return self._get_with_retry()
     
@@ -118,20 +118,37 @@ class ConnectionPool:
             "active_count": self._active_count,
             "max_size": self._max_size
         }
+    def shutdown(self):
+        with self._pool_lock:
+            while not self._pool.empty():
+                try:
+                    conn = self._pool.get_nowait()
+                    try:
+                        conn.close()
+                    except:
+                        pass
+                except:
+                    pass
+            
+            self._active_count = 0
+            self._initialized = False
 
 _pool_instance = ConnectionPool()
 
 def get_connection():
-    """Legacy wrapper — now uses pooled connections with retry."""
     return _pool_instance.get_connection()
 
 def release_connection(conn, is_healthy=True):
-    """Return connection to pool. Call this instead of conn.close()."""
     _pool_instance.return_connection(conn, is_healthy)
 
 def pool_stats():
-    """Get current connection pool statistics."""
     return _pool_instance.stats()
+
+def shutdown_pool():
+    try:
+        _pool_instance.shutdown()
+    except Exception as e:
+        print(f"[Pool Shutdown] Error: {e}")
 
 class DBConnection:
     def __enter__(self):
