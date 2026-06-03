@@ -126,7 +126,7 @@ def show_login_screen(app, on_success_callback):
     def test_and_update_status():
         server_display = config.SQL_SERVER.split('\\')[0] if config.SQL_SERVER else 'نامشخص'
         canvas.itemconfig(status_text, 
-            text=f'در حال اتصال به "{server_display}"....', 
+            text=f'... {server_display} در حال اتصال به', 
             fill='#FF8C00')
         login_win.update_idletasks()
         
@@ -140,7 +140,7 @@ def show_login_screen(app, on_success_callback):
         
         if ok:
             canvas.itemconfig(status_text,
-                text=f'ارتباط با سرور پایگاه داده "{server_display}" برقرار شد.',
+                text=f'ارتباط با سرور پایگاه داده {server_display} برقرار شد.',
                 fill='#4CAF50')
             try:
                 database.setup_database()
