@@ -1200,6 +1200,8 @@ def export_audit_log_excel(parent, app=None):
 
         rows = database.get_audit_logs(start_str, end_str)
 
+        rows = [tuple(row) for row in rows]
+
         if not rows:
             messagebox.showwarning(
                 "نتیجه‌ای یافت نشد",
