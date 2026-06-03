@@ -924,7 +924,7 @@ def show_heatmap_analytics(app):
             for i, (dept_name, count) in enumerate(top3, 1):
                 rank_colors = {1: "#B8860B", 2: "#708090", 3: "#8B4513"}
                 color = rank_colors.get(i, "#555555")
-                tb.Label(top3_frame, text=f"{i}- {dept_name} ({count})", font=(FONT_TABLE, 10), foreground=color).pack(side=tk.RIGHT, padx=10)
+                tb.Label(top3_frame, text=f"{i}- {dept_name} ({count})", font=(FONT_TABLE, 12), foreground=color).pack(side=tk.RIGHT, padx=10)
         else:
             tb.Label(top3_frame, text="واحدی یافت نشد", font=(FONT_MAIN, 11), bootstyle=SECONDARY).pack(side=tk.RIGHT)
     
