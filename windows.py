@@ -1441,35 +1441,45 @@ def open_change_password_window(parent, username):
     confirm_pass_entry = tb.Entry(form_frame, show="●", justify="center", font=(FONT_MAIN, 12))
     confirm_pass_entry.pack(fill=tk.X, pady=(0, 15))
 
-    status_label = tb.Label(form_frame, text="", font=(FONT_MAIN, 11), bootstyle=INFO, anchor="center", background='')
+    status_label = tb.Label(form_frame, text="", font=(FONT_MAIN, 11), bootstyle=INFO, anchor="center")
     status_label.pack(pady=(0, 10))
 
     def do_change():
-        current_pw = current_pass_entry.get().strip()
-        new_pw = new_pass_entry.get().strip()
-        confirm_pw = confirm_pass_entry.get().strip()
+        try:
+            status_label.config(text="", bootstyle=INFO)
 
-        if not current_pw:
-            status_label.config(text="❌ لطفاً رمز عبور فعلی را وارد کنید", bootstyle=DANGER)
-            return
-        if len(new_pw) < 3:
-            status_label.config(text="❌ رمز عبور جدید باید حداقل ۳ کاراکتر باشد", bootstyle=DANGER)
-            return
-        if new_pw != confirm_pw:
-            status_label.config(text="❌ تکرار رمز عبور مطابقت ندارد", bootstyle=DANGER)
-            return
+            current_pw = current_pass_entry.get().strip()
+            new_pw = new_pass_entry.get().strip()
+            confirm_pw = confirm_pass_entry.get().strip()
 
-        success, _, _ = database.authenticate_user(username, current_pw)
-        if not success:
-            status_label.config(text="❌ رمز عبور فعلی اشتباه است", bootstyle=DANGER)
-            return
+            if not current_pw:
+                status_label.config(text="❌ لطفاً رمز عبور فعلی را وارد کنید", bootstyle=DANGER)
+                return
+            if len(new_pw) < 3:
+                status_label.config(text="❌ رمز عبور جدید باید حداقل ۳ کاراکتر باشد", bootstyle=DANGER)
+                return
+            if new_pw != confirm_pw:
+                status_label.config(text="❌ تکرار رمز عبور مطابقت ندارد", bootstyle=DANGER)
+                return
+            if not username:
+                status_label.config(text="❌ خطا: نام کاربری معتبر نیست", bootstyle=DANGER)
+                return
 
-        if database.change_user_password(username, new_pw):
-            database.log_audit("user_password_changed", user=username)
-            messagebox.showinfo("موفقیت", "✅ رمز عبور با موفقیت تغییر یافت", parent=cp_win)
-            cp_win.destroy()
-        else:
-            status_label.config(text="❌ خطا در به‌روزرسانی رمز عبور", bootstyle=DANGER)
+            success, _, _, err_msg = database.authenticate_user(username, current_pw)
+            if not success:
+                status_label.config(text=f"❌ {err_msg}", bootstyle=DANGER)
+                return
+
+            if database.change_user_password(username, new_pw):
+                database.log_audit("user_password_changed", user=username)
+                messagebox.showinfo("موفقیت", "✅ رمز عبور با موفقیت تغییر یافت", parent=cp_win)
+                cp_win.destroy()
+            else:
+                status_label.config(text="❌ خطا در به‌روزرسانی رمز عبور (کاربر یافت نشد)", bootstyle=DANGER)
+        except Exception as e:
+            status_label.config(text=f"❌ خطا: {str(e)}", bootstyle=DANGER)
+            import traceback
+            traceback.print_exc()
 
     btn_frame = tb.Frame(form_frame)
     btn_frame.pack(fill=tk.X, pady=(10, 0))

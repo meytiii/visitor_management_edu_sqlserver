@@ -277,6 +277,10 @@ def rebuild_dashboard_menu():
     user_menu = tk.Menu(menubar, tearoff=0)
 
     def change_password():
+        username = getattr(app, 'current_username', None)
+        if not username:
+            messagebox.showerror("خطا", "نام کاربری شناسایی نشد. لطفاً دوباره وارد شوید.")
+            return
         windows.open_change_password_window(app, username)
 
     def logout():

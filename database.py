@@ -392,8 +392,14 @@ def change_user_password(username, new_password):
         with DBConnection() as conn:
             cursor = conn.cursor()
             cursor.execute("UPDATE users SET password = ? WHERE username = ?", (hashed, username))
+            if cursor.rowcount == 0:
+                print(f"Warning: No user found with username '{username}'")
+                return False
         return True
-    except:
+    except Exception as e:
+        print(f"Error in change_user_password: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 # --- DATA GENERATION ---
