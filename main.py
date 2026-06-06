@@ -380,12 +380,18 @@ def on_app_close():
     try:
         try:
             database.log_audit("app_closed", user=getattr(app, "current_username", None))
-        except:
+        except Exception:
             pass
     finally:
-        database.shutdown_pool()
+        try:
+            database.shutdown_pool()
+        except Exception:
+            pass
+
         app.quit()
         app.destroy()
+        import os
+        os._exit(0)
 
 app.protocol("WM_DELETE_WINDOW", on_app_close)
 
