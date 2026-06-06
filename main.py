@@ -8,6 +8,7 @@ from datetime import datetime
 import jdatetime
 from PIL import Image, ImageTk
 import os
+import uuid
 
 # Local modules
 import config
@@ -19,6 +20,7 @@ import printer
 
 # --- Main Application Setup ---
 app = tb.Window(themename="lumen")
+app.session_id = str(uuid.uuid4())[:18]
 app.title(f"سامانه مدیریت ورود و خروج (اداره حراست) - نسخه {config.APP_VERSION}")
 app.geometry("1050x600")
 app.resizable(False, False)

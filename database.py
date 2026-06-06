@@ -10,6 +10,11 @@ from queue import Queue, Empty
 import jdatetime
 from tkinter import messagebox
 import config
+import socket
+import getpass
+import uuid
+import re
+import json
 
 DEPARTMENT_LIST = config.DEPARTMENT_LIST
 
@@ -213,23 +218,49 @@ def setup_database():
             )
         """)
         
-        #Audit log table
+        # --- AUDIT LOG TABLE ---
         cursor.execute("""
             IF OBJECT_ID('audit_log', 'U') IS NULL
-            CREATE TABLE audit_log (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                shamsi_date NVARCHAR(20) NOT NULL,
-                shamsi_time NVARCHAR(20) NOT NULL,
-                event_type NVARCHAR(100) NOT NULL,
-                user_name NVARCHAR(100),
-                visitor_id INT,
-                visitor_name NVARCHAR(200),
-                national_id NVARCHAR(20),
-                employee_to_meet NVARCHAR(200),
-                department NVARCHAR(200),
-                details NVARCHAR(MAX),
-                created_at NVARCHAR(50)
-            )
+            BEGIN
+                CREATE TABLE audit_log (
+                    id INT IDENTITY(1,1) PRIMARY KEY,
+                    shamsi_date NVARCHAR(20) NOT NULL,
+                    shamsi_time NVARCHAR(20) NOT NULL,
+                    event_type NVARCHAR(100) NOT NULL,
+                    user_name NVARCHAR(100),
+                    visitor_id INT,
+                    visitor_name NVARCHAR(200),
+                    national_id NVARCHAR(20),
+                    employee_to_meet NVARCHAR(200),
+                    department NVARCHAR(200),
+                    details NVARCHAR(MAX),
+                    created_at NVARCHAR(50),
+
+                    -- New Potent Forensic Columns
+                    session_id NVARCHAR(50) NULL,
+                    workstation_name NVARCHAR(100) NULL,
+                    windows_user NVARCHAR(100) NULL,
+                    mac_address NVARCHAR(50) NULL,
+                    old_state NVARCHAR(MAX) NULL,
+                    new_state NVARCHAR(MAX) NULL
+                )
+            END
+            ELSE
+            BEGIN
+                -- Safely alter table to add columns if updating an existing deployment
+                IF COL_NAME(OBJECT_ID('audit_log'), 'session_id') IS NULL 
+                    ALTER TABLE audit_log ADD session_id NVARCHAR(50) NULL;
+                IF COL_NAME(OBJECT_ID('audit_log'), 'workstation_name') IS NULL 
+                    ALTER TABLE audit_log ADD workstation_name NVARCHAR(100) NULL;
+                IF COL_NAME(OBJECT_ID('audit_log'), 'windows_user') IS NULL 
+                    ALTER TABLE audit_log ADD windows_user NVARCHAR(100) NULL;
+                IF COL_NAME(OBJECT_ID('audit_log'), 'mac_address') IS NULL 
+                    ALTER TABLE audit_log ADD mac_address NVARCHAR(50) NULL;
+                IF COL_NAME(OBJECT_ID('audit_log'), 'old_state') IS NULL 
+                    ALTER TABLE audit_log ADD old_state NVARCHAR(MAX) NULL;
+                IF COL_NAME(OBJECT_ID('audit_log'), 'new_state') IS NULL 
+                    ALTER TABLE audit_log ADD new_state NVARCHAR(MAX) NULL;
+            END
         """)
         
         try:
@@ -431,51 +462,75 @@ def delete_dev_records():
     except Exception as e:
         messagebox.showerror("Error", f"Failed to delete dev records: {e}")
 
+def _get_system_context():
+    try:
+        workstation = socket.gethostname()
+        win_user = getpass.getuser()
+
+        mac_num = uuid.getnode()
+        mac_raw = '%012x' % mac_num
+        mac_addr = ':'.join(re.findall('..', mac_raw))
+    except Exception:
+        workstation, win_user, mac_addr = "Unknown", "Unknown", "Unknown"
+
+    return workstation, win_user, mac_addr
+
 # --- AUDIT LOG ---
 def log_audit(event_type: str, user=None, raise_on_error=False, **kwargs):
     if event_type not in config.AUDIT_EVENT_TYPES:
         print(f"[Audit Log Error] Invalid event type: {event_type}")
         return
-    
+
     try:
         now_j = jdatetime.datetime.now()
         sh_date = now_j.strftime("%Y/%m/%d")
         sh_time = now_j.strftime("%H:%M:%S")
         created_at = datetime.now().isoformat(timespec="seconds")
-        
+
         if user is None:
             user = "System"
-        
+
+        workstation, win_user, mac_addr = _get_system_context()
+
         visitor_id = kwargs.get("visitor_id")
         visitor_name = kwargs.get("visitor_name")
         national_id = kwargs.get("national_id")
         employee_to_meet = kwargs.get("employee_to_meet")
         department = kwargs.get("department")
+        session_id = kwargs.get("session_id")
         details = kwargs.get("details") or kwargs.get("error") or "No details provided"
-        
+
+        old_state_raw = kwargs.get("old_state")
+        new_state_raw = kwargs.get("new_state")
+
+        old_state_str = json.dumps(old_state_raw, ensure_ascii=False) if isinstance(old_state_raw, (dict, list)) else old_state_raw
+        new_state_str = json.dumps(new_state_raw, ensure_ascii=False) if isinstance(new_state_raw, (dict, list)) else new_state_raw
+
         extra = {k: v for k, v in kwargs.items() 
-                 if k not in ("visitor_id", "visitor_name", "national_id", 
-                              "employee_to_meet", "department", "details", "error")}
+                 if k not in ("visitor_id", "visitor_name", "national_id", "employee_to_meet", 
+                              "department", "details", "error", "session_id", "old_state", "new_state")}
         if extra and details == "No details provided":
-            details = str(extra)
-        
+            details = json.dumps(extra, ensure_ascii=False)
+
         with DBConnection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO audit_log
                     (shamsi_date, shamsi_time, event_type, user_name,
-                     visitor_id, visitor_name, national_id,
-                     employee_to_meet, department, details, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     visitor_id, visitor_name, national_id, employee_to_meet, department, 
+                     details, created_at, session_id, workstation_name, windows_user, 
+                     mac_address, old_state, new_state)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 sh_date, sh_time, event_type, user,
-                visitor_id, visitor_name, national_id,
-                employee_to_meet, department, details, created_at,
+                visitor_id, visitor_name, national_id, employee_to_meet, department,
+                details, created_at, session_id, workstation, win_user, 
+                mac_addr, old_state_str, new_state_str
             ))
     except Exception as e:
-        print(f"[Audit Log Error] {e}")
+        print(f"[Critical Audit Logging Failure]: {e}")
         if raise_on_error:
-            raise
+            raise e
 
 def get_audit_logs(start_date: str, end_date: str) -> list:
     with DBConnection() as conn:
