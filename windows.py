@@ -813,7 +813,6 @@ def show_heatmap_analytics(app):
     filter_frame = tb.Frame(analytics_win, padding=10)
     filter_frame.pack(fill=tk.X)
     
-    # Time filters row
     time_frame = tb.Frame(filter_frame)
     time_frame.pack(fill=tk.X)
     
@@ -828,7 +827,6 @@ def show_heatmap_analytics(app):
     cb_year.pack(side=tk.RIGHT, padx=2)
     tb.Label(time_frame, text="سال").pack(side=tk.RIGHT)
     
-    # Department + buttons row
     dept_frame = tb.Frame(filter_frame)
     dept_frame.pack(fill=tk.X, pady=(10, 0))
     
@@ -870,16 +868,6 @@ def show_heatmap_analytics(app):
             month_name=m_name if m_name in config.PERSIAN_MONTHS else None,
             day=d if d else None
         )
-        
-        if not data:
-            tb.Label(chart_container, text="اطلاعاتی با این فیلتر یافت نشد", font=(FONT_MAIN, 14), bootstyle=SECONDARY).pack(pady=50)
-            if top3:
-                tb.Label(top3_frame, text="🏆 ۳ واحد پرتردد:", font=(FONT_MAIN, 12, "bold"), bootstyle=PRIMARY).pack(side=tk.RIGHT, padx=10)
-                for i, (dept_name, count) in enumerate(top3, 1):
-                    tb.Label(top3_frame, text=f"{i}- {dept_name} ({count})", font=(FONT_TABLE, 10), bootstyle=INFO).pack(side=tk.RIGHT, padx=10)
-            else:
-                tb.Label(top3_frame, text="واحدی یافت نشد", font=(FONT_MAIN, 11), bootstyle=SECONDARY).pack(side=tk.RIGHT)
-            return
         
         hours_found, counts_found = zip(*data) if data else ([], [])
         full_hours = [f"{h:02d}" for h in range(7, 20)]
@@ -924,7 +912,7 @@ def show_heatmap_analytics(app):
             for i, (dept_name, count) in enumerate(top3, 1):
                 rank_colors = {1: "#B8860B", 2: "#708090", 3: "#8B4513"}
                 color = rank_colors.get(i, "#555555")
-                display_text = f"{i}- {dept_name} ({count})"
+                display_text = f"{i}- {dept_name} ({count} نفر)"
                 tb.Label(top3_frame, text=display_text, font=(FONT_TABLE, 13), foreground=color).pack(side=tk.RIGHT, padx=10)
         else:
             tb.Label(top3_frame, text="واحدی یافت نشد", font=(FONT_MAIN, 12), bootstyle=SECONDARY).pack(side=tk.RIGHT)
