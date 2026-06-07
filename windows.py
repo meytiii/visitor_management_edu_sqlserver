@@ -920,13 +920,11 @@ def show_heatmap_analytics(app):
         
         # Top 3 display
         if top3:
-            header_text = utils.make_farsi("🏆 ۳ واحد پرتردد:")
-            tb.Label(top3_frame, text=header_text, font=(FONT_MAIN, 14, "bold"), bootstyle=PRIMARY).pack(side=tk.RIGHT, padx=10)
+            tb.Label(top3_frame, text="🏆 ۳ واحد پرتردد:", font=(FONT_MAIN, 14, "bold"), bootstyle=PRIMARY).pack(side=tk.RIGHT, padx=10)
             for i, (dept_name, count) in enumerate(top3, 1):
                 rank_colors = {1: "#B8860B", 2: "#708090", 3: "#8B4513"}
                 color = rank_colors.get(i, "#555555")
-                raw_text = f"{i}- {dept_name} ({count})"
-                display_text = utils.make_farsi(raw_text)
+                display_text = f"{i}- {dept_name} ({count})"
                 tb.Label(top3_frame, text=display_text, font=(FONT_TABLE, 13), foreground=color).pack(side=tk.RIGHT, padx=10)
         else:
             tb.Label(top3_frame, text="واحدی یافت نشد", font=(FONT_MAIN, 12), bootstyle=SECONDARY).pack(side=tk.RIGHT)
