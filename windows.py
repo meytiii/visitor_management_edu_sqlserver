@@ -140,7 +140,7 @@ def show_login_screen(app, on_success_callback):
         
         if ok:
             canvas.itemconfig(status_text,
-                text=f'ارتباط با سرور پایگاه داده {server_display} برقرار شد.',
+                text=f'ارتباط با سرور پایگاه داده {server_display} برقرار شد',
                 fill='#4CAF50')
             try:
                 database.setup_database()
@@ -148,7 +148,7 @@ def show_login_screen(app, on_success_callback):
                 print(f"Database setup error: {e}")
         else:
             canvas.itemconfig(status_text,
-                text='برقراری اتصال ناموفق بود. تنظیمات سرور را بررسی کنید.',
+                text='برقراری اتصال ناموفق بود. تنظیمات سرور را بررسی کنید',
                 fill='#f44336')
 
     def on_settings_changed():
