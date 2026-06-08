@@ -1515,7 +1515,7 @@ def open_change_password_window(parent, username):
 
     cp_win.bind('<Return>', lambda e: do_change())
 
-def open_data_cleanup_window(parent):
+def open_data_cleanup_window(parent, on_data_change=None):
     ensure_fonts()
     cleanup_win = tb.Toplevel(parent)
     cleanup_win.title("پاکسازی و اصلاح داده‌های Autofill")
@@ -1596,6 +1596,7 @@ def open_data_cleanup_window(parent):
             load_employees()
             ent_emp_correct.delete(0, tk.END)
             messagebox.showinfo("موفق", "نام پرسنل اصلاح شد و لیست آپدیت گردید.", parent=cleanup_win)
+            if on_data_change: on_data_change()
 
     def hide_emp():
         selected = emp_tree.selection()
@@ -1605,6 +1606,7 @@ def open_data_cleanup_window(parent):
             database.hide_employee_from_autofill(old_name)
             load_employees()
             ent_emp_correct.delete(0, tk.END)
+            if on_data_change: on_data_change()
 
     tb.Button(emp_controls, text="مخفی کردن از لیست", bootstyle=WARNING, command=hide_emp).pack(side=tk.LEFT, padx=5)
     tb.Button(emp_controls, text="اصلاح و ادغام", bootstyle=SUCCESS, command=fix_emp).pack(side=tk.LEFT, padx=5)
@@ -1682,6 +1684,7 @@ def open_data_cleanup_window(parent):
             load_visitors()
             ent_vis_correct.delete(0, tk.END)
             messagebox.showinfo("موفق", "نام مهمان اصلاح شد.", parent=cleanup_win)
+            if on_data_change: on_data_change()
 
     def hide_vis():
         selected = vis_tree.selection()
@@ -1692,6 +1695,7 @@ def open_data_cleanup_window(parent):
             database.hide_visitor_from_autofill(nid, old_name)
             load_visitors()
             ent_vis_correct.delete(0, tk.END)
+            if on_data_change: on_data_change()
 
     tb.Button(vis_controls, text="مخفی کردن از لیست", bootstyle=WARNING, command=hide_vis).pack(side=tk.LEFT, padx=5)
     tb.Button(vis_controls, text="اصلاح نام", bootstyle=SUCCESS, command=fix_vis).pack(side=tk.LEFT, padx=5)
@@ -1699,7 +1703,7 @@ def open_data_cleanup_window(parent):
     load_employees()
     load_visitors()
 
-def open_developer_mode(app, on_self_role_change=None):
+def open_developer_mode(app, on_self_role_change=None, on_data_change=None):
     ensure_fonts()
     dev_win = tb.Toplevel(app)
     dev_win.title("پنل مدیریت")
@@ -1727,10 +1731,10 @@ def open_developer_mode(app, on_self_role_change=None):
         ("تعداد ورودی/خروجی های ثبت شده", lambda: show_daily_stats_ui(dev_win), INFO),
         ("نمودار تحلیل ترافیک", lambda: show_heatmap_analytics(app), WARNING),
         ("لاگ حسابرسی (خروجی اکسل)",lambda: export_audit_log_excel(dev_win, app),INFO),
-        ("افزودن ۱۰۰ رکورد آزمایشی", database.add_dummy_data, (SUCCESS, OUTLINE)),
+        ("اصلاح داده‌های ذخیره شده (Autofill)", lambda: open_data_cleanup_window(dev_win, on_data_change), PRIMARY),
         ("پشتیبان‌گیری از دیتابیس", lambda: utils.do_backup(dev_win, getattr(app, 'current_username', 'admin')), SUCCESS),
-        ("اصلاح داده‌های ذخیره شده (Autofill)", lambda: open_data_cleanup_window(dev_win), PRIMARY),
         ("بازیابی از فایل پشتیبان", lambda: utils.do_restore(dev_win, getattr(app, 'current_username', 'admin')), (WARNING, OUTLINE)),
+        ("افزودن ۱۰۰ رکورد آزمایشی", database.add_dummy_data, (SUCCESS, OUTLINE)),
     ]
     
     for text, cmd, style in buttons:
