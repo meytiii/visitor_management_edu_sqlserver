@@ -263,6 +263,41 @@ tb.Button(btn_frame, text="مشاهده و جستجوی سوابق📚", command
 tb.Button(btn_frame, text="راهنما📑", command=lambda: windows.show_help_popup(getattr(app, 'current_role', 'guard')), bootstyle=SECONDARY).pack(pady=4, fill=tk.X)
 
 # --- LOGIN & MENU SETUP ---
+def force_disconnect():
+    if getattr(app, 'is_logged_in', False):
+        app.is_logged_in = False
+        for child in app.winfo_children():
+            if isinstance(child, tk.Toplevel):
+                child.destroy()
+        app.withdraw()
+        messagebox.showerror("خطای ارتباط", "ارتباط شما با سرور پایگاه داده قطع شد")
+        windows.show_login_screen(app, setup_dashboard)
+
+def heartbeat_monitor():
+    import time
+    failures = 0
+    while getattr(app, 'is_logged_in', False):
+        time.sleep(10)
+        
+        if not getattr(app, 'is_logged_in', False):
+            break
+            
+        ok, _ = config.test_connection({
+            "sql_server": config.SQL_SERVER,
+            "sql_database": config.SQL_DATABASE,
+            "sql_user": config.SQL_USER,
+            "sql_password": config.SQL_PASSWORD,
+            "sql_driver": config.SQL_DRIVER
+        })
+        
+        if not ok:
+            failures += 1
+            if failures >= 2: 
+                app.after(0, force_disconnect)
+                break
+        else:
+            failures = 0
+
 def rebuild_dashboard_menu():
     role = getattr(app, 'current_role', 'guard')
     full_name = getattr(app, 'current_user', '')
@@ -284,6 +319,7 @@ def rebuild_dashboard_menu():
         windows.open_change_password_window(app, username)
 
     def logout():
+        app.is_logged_in = False
         database.log_audit("logout", user=username)
         for child in app.winfo_children():
             if isinstance(child, tk.Toplevel):
@@ -299,6 +335,7 @@ def rebuild_dashboard_menu():
 
 def setup_dashboard(username, role, full_name):
     app.deiconify()
+    app.is_logged_in = True
     app.current_user = full_name
     app.current_username = username
     app.current_role = role
@@ -308,6 +345,8 @@ def setup_dashboard(username, role, full_name):
         update_employee_suggestions()
     except:
         pass
+        
+    threading.Thread(target=heartbeat_monitor, daemon=True).start()
 
 try:
     for widget in [entry_visitor_name, combo_department]:
