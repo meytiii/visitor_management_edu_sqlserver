@@ -914,3 +914,44 @@ def update_user(old_username: str, new_username: str = None, new_fullname: str =
                 (new_username, old_username)
             )
     return True
+
+# ─── AUTOFILL DATA CLEANUP ────────────────────────────────────
+def get_all_unique_employees():
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT employee_to_meet, COUNT(*) FROM visitors WHERE employee_to_meet != '' GROUP BY employee_to_meet ORDER BY employee_to_meet")
+        return cursor.fetchall()
+
+def get_all_unique_visitors():
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT national_id, visitor_name, COUNT(*) FROM visitors WHERE national_id != '' GROUP BY national_id, visitor_name ORDER BY visitor_name")
+        return cursor.fetchall()
+
+def fix_employee_typo(old_name, new_name):
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE visitors SET employee_to_meet = ? WHERE employee_to_meet = ?", (new_name, old_name))
+    global _cache
+    _cache["employees"]["timestamp"] = 0
+    return True
+
+def fix_visitor_typo(nid, old_name, new_name):
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE visitors SET visitor_name = ? WHERE national_id = ? AND visitor_name = ?", (new_name, nid, old_name))
+    return True
+        
+def delete_visitor_records_by_nid_and_name(nid, name):
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM visitors WHERE national_id = ? AND visitor_name = ?", (nid, name))
+    return True
+            
+def delete_employee_records_by_name(name):
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM visitors WHERE employee_to_meet = ?", (name,))
+    global _cache
+    _cache["employees"]["timestamp"] = 0
+    return True

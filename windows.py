@@ -1512,6 +1512,137 @@ def open_change_password_window(parent, username):
 
     cp_win.bind('<Return>', lambda e: do_change())
 
+def open_data_cleanup_window(parent):
+    ensure_fonts()
+    cleanup_win = tb.Toplevel(parent)
+    cleanup_win.title("پاکسازی و اصلاح داده‌های Autofill")
+    cleanup_win.geometry("700x600")
+    try: cleanup_win.iconbitmap(utils.resource_path('app_icon.ico'))
+    except: pass
+
+    notebook = tb.Notebook(cleanup_win, bootstyle=PRIMARY)
+    notebook.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+
+    # --- TAB 1: EMPLOYEES (ملاقات شونده) ---
+    emp_tab = tb.Frame(notebook, padding=10)
+    notebook.add(emp_tab, text="اصلاح نام پرسنل (ملاقات شونده)")
+
+    emp_tree = tb.Treeview(emp_tab, columns=("name", "count"), show='headings', bootstyle=PRIMARY)
+    emp_tree.heading("name", text="نام ثبت شده")
+    emp_tree.heading("count", text="تعداد تکرار در سیستم")
+    emp_tree.column("name", width=300, anchor=tk.CENTER)
+    emp_tree.column("count", width=150, anchor=tk.CENTER)
+    emp_tree.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+    emp_controls = tb.Frame(emp_tab)
+    emp_controls.pack(fill=tk.X)
+    
+    tb.Label(emp_controls, text=": نام صحیح").pack(side=tk.RIGHT, padx=5)
+    ent_emp_correct = tb.Entry(emp_controls, justify="right", font=(FONT_MAIN, 11))
+    ent_emp_correct.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=5)
+
+    def load_employees():
+        for i in emp_tree.get_children(): emp_tree.delete(i)
+        for name, count in database.get_all_unique_employees():
+            emp_tree.insert("", tk.END, values=(name, count))
+
+    def on_emp_select(e):
+        selected = emp_tree.selection()
+        if selected:
+            ent_emp_correct.delete(0, tk.END)
+            ent_emp_correct.insert(0, emp_tree.item(selected[0], "values")[0])
+
+    emp_tree.bind("<ButtonRelease-1>", on_emp_select)
+
+    def fix_emp():
+        selected = emp_tree.selection()
+        if not selected: return messagebox.showwarning("خطا", "یک مورد را انتخاب کنید", parent=cleanup_win)
+        old_name = emp_tree.item(selected[0], "values")[0]
+        new_name = ent_emp_correct.get().strip()
+        if not new_name or old_name == new_name: return
+        
+        if messagebox.askyesno("تایید", f"آیا مطمئن هستید که تمام سوابق '{old_name}' به '{new_name}' تغییر کند؟", parent=cleanup_win):
+            database.fix_employee_typo(old_name, new_name)
+            load_employees()
+            ent_emp_correct.delete(0, tk.END)
+            messagebox.showinfo("موفق", "نام پرسنل اصلاح شد و لیست آپدیت گردید.", parent=cleanup_win)
+
+    def del_emp():
+        selected = emp_tree.selection()
+        if not selected: return
+        old_name = emp_tree.item(selected[0], "values")[0]
+        if messagebox.askyesno("هشدار خطرناک", f"تمام سوابق متعلق به '{old_name}' کاملا حذف خواهند شد. ادامه؟", parent=cleanup_win):
+            database.delete_employee_records_by_name(old_name)
+            load_employees()
+            ent_emp_correct.delete(0, tk.END)
+
+    tb.Button(emp_controls, text="حذف کامل", bootstyle=DANGER, command=del_emp).pack(side=tk.LEFT, padx=5)
+    tb.Button(emp_controls, text="اصلاح و ادغام", bootstyle=SUCCESS, command=fix_emp).pack(side=tk.LEFT, padx=5)
+
+    # --- TAB 2: VISITORS (مهمانان) ---
+    vis_tab = tb.Frame(notebook, padding=10)
+    notebook.add(vis_tab, text="اصلاح نام مهمانان")
+
+    vis_tree = tb.Treeview(vis_tab, columns=("nid", "name", "count"), show='headings', bootstyle=INFO)
+    vis_tree.heading("nid", text="کد ملی")
+    vis_tree.heading("name", text="نام ثبت شده")
+    vis_tree.heading("count", text="دفعات مراجعه")
+    vis_tree.column("nid", width=120, anchor=tk.CENTER)
+    vis_tree.column("name", width=250, anchor=tk.CENTER)
+    vis_tree.column("count", width=100, anchor=tk.CENTER)
+    vis_tree.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+
+    vis_controls = tb.Frame(vis_tab)
+    vis_controls.pack(fill=tk.X)
+
+    tb.Label(vis_controls, text=": نام صحیح").pack(side=tk.RIGHT, padx=5)
+    ent_vis_correct = tb.Entry(vis_controls, justify="right", font=(FONT_MAIN, 11))
+    ent_vis_correct.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=5)
+
+    def load_visitors():
+        for i in vis_tree.get_children(): vis_tree.delete(i)
+        for nid, name, count in database.get_all_unique_visitors():
+            vis_tree.insert("", tk.END, values=(nid, name, count))
+
+    def on_vis_select(e):
+        selected = vis_tree.selection()
+        if selected:
+            ent_vis_correct.delete(0, tk.END)
+            ent_vis_correct.insert(0, vis_tree.item(selected[0], "values")[1])
+
+    vis_tree.bind("<ButtonRelease-1>", on_vis_select)
+
+    def fix_vis():
+        selected = vis_tree.selection()
+        if not selected: return messagebox.showwarning("خطا", "یک مورد را انتخاب کنید", parent=cleanup_win)
+        vals = vis_tree.item(selected[0], "values")
+        nid, old_name = vals[0], vals[1]
+        new_name = ent_vis_correct.get().strip()
+        if not new_name or old_name == new_name: return
+        
+        if messagebox.askyesno("تایید", f"آیا سوابق مهمان '{old_name}' با کد ملی {nid} اصلاح شود؟", parent=cleanup_win):
+            database.fix_visitor_typo(nid, old_name, new_name)
+            load_visitors()
+            ent_vis_correct.delete(0, tk.END)
+            messagebox.showinfo("موفق", "نام مهمان اصلاح شد.", parent=cleanup_win)
+
+    def del_vis():
+        selected = vis_tree.selection()
+        if not selected: return
+        vals = vis_tree.item(selected[0], "values")
+        nid, old_name = vals[0], vals[1]
+        if messagebox.askyesno("هشدار", f"رکورد(های) مهمان '{old_name}' حذف شود؟", parent=cleanup_win):
+            database.delete_visitor_records_by_nid_and_name(nid, old_name)
+            load_visitors()
+            ent_vis_correct.delete(0, tk.END)
+
+    tb.Button(vis_controls, text="حذف رکورد", bootstyle=DANGER, command=del_vis).pack(side=tk.LEFT, padx=5)
+    tb.Button(vis_controls, text="اصلاح نام", bootstyle=SUCCESS, command=fix_vis).pack(side=tk.LEFT, padx=5)
+
+    # Initial Load
+    load_employees()
+    load_visitors()
+
 def open_developer_mode(app, on_self_role_change=None):
     ensure_fonts()
     dev_win = tb.Toplevel(app)
@@ -1542,6 +1673,7 @@ def open_developer_mode(app, on_self_role_change=None):
         ("لاگ حسابرسی (خروجی اکسل)",lambda: export_audit_log_excel(dev_win, app),INFO),
         ("افزودن ۱۰۰ رکورد آزمایشی", database.add_dummy_data, (SUCCESS, OUTLINE)),
         ("پشتیبان‌گیری از دیتابیس", lambda: utils.do_backup(dev_win, getattr(app, 'current_username', 'admin')), SUCCESS),
+        ("اصلاح داده‌های ذخیره شده (Autofill)", lambda: open_data_cleanup_window(dev_win), PRIMARY),
         ("بازیابی از فایل پشتیبان", lambda: utils.do_restore(dev_win, getattr(app, 'current_username', 'admin')), (WARNING, OUTLINE)),
     ]
     
