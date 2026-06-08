@@ -43,6 +43,9 @@ def ensure_fonts():
         style.configure('primary.Treeview', font=(FONT_TABLE, 12, "bold"), rowheight=45) 
         style.configure('primary.Treeview.Heading', font=(FONT_MAIN, 11, "bold"))
         
+        style.configure('info.Treeview', font=(FONT_TABLE, 12, "bold"), rowheight=45) 
+        style.configure('info.Treeview.Heading', font=(FONT_MAIN, 11, "bold"))
+        
         _fonts_checked = True
     except: pass
 
