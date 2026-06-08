@@ -915,17 +915,72 @@ def update_user(old_username: str, new_username: str = None, new_fullname: str =
             )
     return True
 
-# ─── AUTOFILL DATA CLEANUP ────────────────────────────────────
+# ─── AUTOFILL DATA CLEANUP (BLACKLIST SYSTEM) ──────────────────
+def _ensure_hidden_table(cursor):
+    cursor.execute('''
+        IF OBJECT_ID('hidden_autofill', 'U') IS NULL
+        CREATE TABLE hidden_autofill (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            category NVARCHAR(50),
+            name NVARCHAR(200),
+            nid NVARCHAR(20)
+        )
+    ''')
+
+def get_employee_suggestions(force_refresh=False):
+    global _cache
+    now = time.time()
+    
+    if not force_refresh and (now - _cache["employees"]["timestamp"] < CACHE_DURATION):
+        return _cache["employees"]["data"]
+
+    try:
+        with DBConnection() as conn:
+            cursor = conn.cursor()
+            _ensure_hidden_table(cursor)
+            cursor.execute('''
+                SELECT employee_to_meet, COUNT(*) as cnt 
+                FROM visitors 
+                WHERE employee_to_meet != '' 
+                  AND employee_to_meet NOT IN (SELECT name FROM hidden_autofill WHERE category = 'employee')
+                GROUP BY employee_to_meet 
+                ORDER BY cnt DESC
+            ''')
+            names = [row[0] for row in cursor.fetchall()]
+            
+            _cache["employees"]["data"] = names
+            _cache["employees"]["timestamp"] = now
+            return names
+    except Exception as e:
+        print(f"Error fetching suggestions: {e}")
+        return []
+
 def get_all_unique_employees():
     with DBConnection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT employee_to_meet, COUNT(*) FROM visitors WHERE employee_to_meet != '' GROUP BY employee_to_meet ORDER BY employee_to_meet")
+        _ensure_hidden_table(cursor)
+        cursor.execute('''
+            SELECT employee_to_meet, COUNT(*) 
+            FROM visitors 
+            WHERE employee_to_meet != '' 
+              AND employee_to_meet NOT IN (SELECT name FROM hidden_autofill WHERE category = 'employee')
+            GROUP BY employee_to_meet 
+            ORDER BY employee_to_meet
+        ''')
         return cursor.fetchall()
 
 def get_all_unique_visitors():
     with DBConnection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT national_id, visitor_name, COUNT(*) FROM visitors WHERE national_id != '' GROUP BY national_id, visitor_name ORDER BY visitor_name")
+        _ensure_hidden_table(cursor)
+        cursor.execute('''
+            SELECT national_id, visitor_name, COUNT(*) 
+            FROM visitors 
+            WHERE national_id != '' 
+              AND national_id NOT IN (SELECT nid FROM hidden_autofill WHERE category = 'visitor')
+            GROUP BY national_id, visitor_name 
+            ORDER BY visitor_name
+        ''')
         return cursor.fetchall()
 
 def fix_employee_typo(old_name, new_name):
@@ -941,17 +996,19 @@ def fix_visitor_typo(nid, old_name, new_name):
         cursor = conn.cursor()
         cursor.execute("UPDATE visitors SET visitor_name = ? WHERE national_id = ? AND visitor_name = ?", (new_name, nid, old_name))
     return True
-        
-def delete_visitor_records_by_nid_and_name(nid, name):
+
+def hide_employee_from_autofill(name):
     with DBConnection() as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM visitors WHERE national_id = ? AND visitor_name = ?", (nid, name))
-    return True
-            
-def delete_employee_records_by_name(name):
-    with DBConnection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM visitors WHERE employee_to_meet = ?", (name,))
+        _ensure_hidden_table(cursor)
+        cursor.execute("INSERT INTO hidden_autofill (category, name) VALUES ('employee', ?)", (name,))
     global _cache
     _cache["employees"]["timestamp"] = 0
+    return True
+
+def hide_visitor_from_autofill(nid, name):
+    with DBConnection() as conn:
+        cursor = conn.cursor()
+        _ensure_hidden_table(cursor)
+        cursor.execute("INSERT INTO hidden_autofill (category, name, nid) VALUES ('visitor', ?, ?)", (name, nid))
     return True

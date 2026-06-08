@@ -1594,16 +1594,16 @@ def open_data_cleanup_window(parent):
             ent_emp_correct.delete(0, tk.END)
             messagebox.showinfo("موفق", "نام پرسنل اصلاح شد و لیست آپدیت گردید.", parent=cleanup_win)
 
-    def del_emp():
+    def hide_emp():
         selected = emp_tree.selection()
         if not selected: return
         old_name = emp_tree.item(selected[0], "values")[0]
-        if messagebox.askyesno("هشدار خطرناک", f"تمام سوابق متعلق به '{old_name}' کاملا حذف خواهند شد. ادامه؟", parent=cleanup_win):
-            database.delete_employee_records_by_name(old_name)
+        if messagebox.askyesno("تایید", f"آیا مطمئن هستید که '{old_name}' از لیست پیشنهادات مخفی شود؟\n(سوابق قبلی حفظ خواهند شد)", parent=cleanup_win):
+            database.hide_employee_from_autofill(old_name)
             load_employees()
             ent_emp_correct.delete(0, tk.END)
 
-    tb.Button(emp_controls, text="حذف کامل", bootstyle=DANGER, command=del_emp).pack(side=tk.LEFT, padx=5)
+    tb.Button(emp_controls, text="مخفی کردن از لیست", bootstyle=WARNING, command=hide_emp).pack(side=tk.LEFT, padx=5)
     tb.Button(emp_controls, text="اصلاح و ادغام", bootstyle=SUCCESS, command=fix_emp).pack(side=tk.LEFT, padx=5)
 
 
@@ -1680,20 +1680,19 @@ def open_data_cleanup_window(parent):
             ent_vis_correct.delete(0, tk.END)
             messagebox.showinfo("موفق", "نام مهمان اصلاح شد.", parent=cleanup_win)
 
-    def del_vis():
+    def hide_vis():
         selected = vis_tree.selection()
         if not selected: return
         vals = vis_tree.item(selected[0], "values")
         nid, old_name = vals[0], vals[1]
-        if messagebox.askyesno("هشدار", f"رکورد(های) مهمان '{old_name}' حذف شود؟", parent=cleanup_win):
-            database.delete_visitor_records_by_nid_and_name(nid, old_name)
+        if messagebox.askyesno("تایید", f"آیا مهمان '{old_name}' از لیست پیشنهادات مخفی شود؟\n(سوابق قبلی حفظ خواهند شد)", parent=cleanup_win):
+            database.hide_visitor_from_autofill(nid, old_name)
             load_visitors()
             ent_vis_correct.delete(0, tk.END)
 
-    tb.Button(vis_controls, text="حذف رکورد", bootstyle=DANGER, command=del_vis).pack(side=tk.LEFT, padx=5)
+    tb.Button(vis_controls, text="مخفی کردن از لیست", bootstyle=WARNING, command=hide_vis).pack(side=tk.LEFT, padx=5)
     tb.Button(vis_controls, text="اصلاح نام", bootstyle=SUCCESS, command=fix_vis).pack(side=tk.LEFT, padx=5)
 
-    # Initial Load
     load_employees()
     load_visitors()
 
