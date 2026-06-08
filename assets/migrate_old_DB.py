@@ -172,6 +172,12 @@ def main():
         print(f"❌ Connection failed: {e}")
         return
     
+    print("\n⚠️ WARNING: This script will DROP existing tables and WIPE all data in the SQL Server!")
+    confirm = input("Type 'YES' to proceed with migration: ")
+    if confirm != "YES":
+        print("Migration cancelled by user.")
+        return
+
     drop_and_create_tables(sql_cursor)
     
     print("\nMigrating visitors...")

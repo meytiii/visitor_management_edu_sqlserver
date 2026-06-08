@@ -17,10 +17,10 @@ if not os.path.exists(APP_DATA_DIR):
 # DYNAMIC SERVER CONFIGURATION
 # ----------------------------------------------------------------------
 DEFAULT_SETTINGS = {
-    "sql_server": r"10.15.2.26\visitormanager",
-    "sql_database": "VisitorSystem",
-    "sql_user": "VisitorAppUser",
-    "sql_password": "Herasat1405@",
+    "sql_server": os.environ.get("VISITOR_DB_SERVER", r"10.15.2.26\visitormanager"),
+    "sql_database": os.environ.get("VISITOR_DB_NAME", "VisitorSystem"),
+    "sql_user": os.environ.get("VISITOR_DB_USER", "VisitorAppUser"),
+    "sql_password": os.environ.get("VISITOR_DB_PASS", ""),
     "sql_driver": "{ODBC Driver 18 for SQL Server}"
 }
 
@@ -178,7 +178,6 @@ CULTURAL_MESSAGES = [
     "فرزندان خود را به سلاح علم و ایمان مجهز کنید"
 ]
 
-DEFAULT_DEV_PASSWORD = "herasat_edu@!" 
 GREEN_COLOR = "#4CAF50"
 GREEN_ACTIVE_COLOR = "#45a049"
 BLUE_COLOR = "#008CBA"
