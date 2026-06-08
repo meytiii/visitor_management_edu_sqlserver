@@ -128,28 +128,32 @@ def show_login_screen(app, on_success_callback):
         canvas.itemconfig(status_text, 
             text=f'... {server_display} در حال اتصال به', 
             fill='#FF8C00')
-        login_win.update_idletasks()
         
-        ok, err_msg = config.test_connection({
-            "sql_server": config.SQL_SERVER,
-            "sql_database": config.SQL_DATABASE,
-            "sql_user": config.SQL_USER,
-            "sql_password": config.SQL_PASSWORD,
-            "sql_driver": config.SQL_DRIVER
-        })
-        
-        if ok:
-            canvas.itemconfig(status_text,
-                text=f'ارتباط با سرور پایگاه داده {server_display} برقرار شد',
-                fill='#4CAF50')
-            try:
-                database.setup_database()
-            except Exception as e:
-                print(f"Database setup error: {e}")
-        else:
-            canvas.itemconfig(status_text,
-                text='برقراری اتصال ناموفق بود. تنظیمات سرور را بررسی کنید',
-                fill='#f44336')
+        def background_test():
+            ok, err_msg = config.test_connection({
+                "sql_server": config.SQL_SERVER,
+                "sql_database": config.SQL_DATABASE,
+                "sql_user": config.SQL_USER,
+                "sql_password": config.SQL_PASSWORD,
+                "sql_driver": config.SQL_DRIVER
+            })
+            
+            if ok:
+                try:
+                    database.setup_database()
+                except Exception as e:
+                    print(f"Database setup error: {e}")
+                    
+                login_win.after(0, lambda: canvas.itemconfig(status_text,
+                    text=f'ارتباط با سرور پایگاه داده {server_display} برقرار شد.',
+                    fill='#4CAF50'))
+            else:
+                login_win.after(0, lambda: canvas.itemconfig(status_text,
+                    text='برقراری اتصال ناموفق بود. تنظیمات سرور را بررسی کنید.',
+                    fill='#f44336'))
+
+        import threading
+        threading.Thread(target=background_test, daemon=True).start()
 
     def on_settings_changed():
         test_and_update_status()
