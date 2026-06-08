@@ -3,7 +3,7 @@ from tkinter import messagebox
 import sys
 import json
 
-APP_VERSION = "4.2.5"
+APP_VERSION = "4.2.6"
 
 APP_DATA_DIR = os.path.join(os.environ['PROGRAMDATA'], 'VisitorSystem')
 

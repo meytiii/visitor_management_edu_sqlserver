@@ -433,7 +433,6 @@ def on_app_close():
         except Exception:
             pass
         
-        import os
         os._exit(0)
 
     import threading
@@ -441,7 +440,6 @@ def on_app_close():
     cleanup_thread.start()
     
     def force_kill():
-        import os
         os._exit(0)
         
     app.after(2000, force_kill)

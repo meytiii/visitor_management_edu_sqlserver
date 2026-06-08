@@ -193,8 +193,28 @@ def show_login_screen(app, on_success_callback):
     canvas.create_window(200, 260, window=btn_login, width=150, height=40)
 
     def on_login_window_close():
-        database.log_audit("app_closed", user=getattr(app, "current_username", None))
-        app.destroy()
+        login_win.protocol("WM_DELETE_WINDOW", lambda: None)
+        
+        login_win.withdraw()
+        try:
+            app.withdraw()
+        except Exception:
+            pass
+            
+        def cleanup_and_exit():
+            try:
+                database.log_audit("app_closed", user=getattr(app, "current_username", None))
+            except Exception:
+                pass
+            os._exit(0)
+            
+        import threading
+        threading.Thread(target=cleanup_and_exit, daemon=True).start()
+        
+        def force_kill():
+            os._exit(0)
+            
+        login_win.after(2000, force_kill)
 
     login_win.protocol("WM_DELETE_WINDOW", on_login_window_close)
 
