@@ -420,22 +420,31 @@ def show_success_overlay(parent):
 
 def on_app_close():
     app.protocol("WM_DELETE_WINDOW", lambda: None)
-    try:
+    
+    app.withdraw() 
+    
+    def cleanup_and_exit():
         try:
             database.log_audit("app_closed", user=getattr(app, "current_username", None))
         except Exception:
             pass
-    finally:
         try:
             database.shutdown_pool()
         except Exception:
             pass
-
-        app.quit()
-        app.destroy()
+        
         import os
         os._exit(0)
 
+    import threading
+    cleanup_thread = threading.Thread(target=cleanup_and_exit, daemon=True)
+    cleanup_thread.start()
+    
+    def force_kill():
+        import os
+        os._exit(0)
+        
+    app.after(2000, force_kill)
 app.protocol("WM_DELETE_WINDOW", on_app_close)
 
 if __name__ == "__main__":
