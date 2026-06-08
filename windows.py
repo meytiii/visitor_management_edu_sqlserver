@@ -1516,7 +1516,7 @@ def open_data_cleanup_window(parent):
     ensure_fonts()
     cleanup_win = tb.Toplevel(parent)
     cleanup_win.title("پاکسازی و اصلاح داده‌های Autofill")
-    cleanup_win.geometry("700x600")
+    cleanup_win.geometry("1000x800")
     try: cleanup_win.iconbitmap(utils.resource_path('app_icon.ico'))
     except: pass
 
@@ -1527,24 +1527,51 @@ def open_data_cleanup_window(parent):
     emp_tab = tb.Frame(notebook, padding=10)
     notebook.add(emp_tab, text="اصلاح نام پرسنل (ملاقات شونده)")
 
-    emp_tree = tb.Treeview(emp_tab, columns=("name", "count"), show='headings', bootstyle=PRIMARY)
+    # Employee Search Bar
+    emp_search_frame = tb.Frame(emp_tab)
+    emp_search_frame.pack(fill=tk.X, pady=(0, 10))
+    tb.Label(emp_search_frame, text=": جستجو", font=(FONT_MAIN, 11)).pack(side=tk.RIGHT, padx=5)
+    emp_search_ent = tb.Entry(emp_search_frame, justify="right", font=(FONT_MAIN, 11))
+    emp_search_ent.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=5)
+
+    # Employee Treeview with Scrollbar
+    emp_tree_frame = tb.Frame(emp_tab)
+    emp_tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+    
+    emp_v_scroll = tb.Scrollbar(emp_tree_frame, orient=tk.VERTICAL)
+    emp_v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+    emp_tree = tb.Treeview(emp_tree_frame, columns=("name", "count"), show='headings', bootstyle=PRIMARY, yscrollcommand=emp_v_scroll.set)
+    emp_v_scroll.config(command=emp_tree.yview)
+    
     emp_tree.heading("name", text="نام ثبت شده")
     emp_tree.heading("count", text="تعداد تکرار در سیستم")
-    emp_tree.column("name", width=300, anchor=tk.CENTER)
-    emp_tree.column("count", width=150, anchor=tk.CENTER)
-    emp_tree.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+    emp_tree.column("name", width=600, anchor=tk.CENTER)
+    emp_tree.column("count", width=200, anchor=tk.CENTER)
+    emp_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     emp_controls = tb.Frame(emp_tab)
-    emp_controls.pack(fill=tk.X)
+    emp_controls.pack(fill=tk.X, pady=(0, 10))
     
     tb.Label(emp_controls, text=": نام صحیح").pack(side=tk.RIGHT, padx=5)
     ent_emp_correct = tb.Entry(emp_controls, justify="right", font=(FONT_MAIN, 11))
     ent_emp_correct.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=5)
 
+    all_employees_cache = []
+
     def load_employees():
+        nonlocal all_employees_cache
+        all_employees_cache = database.get_all_unique_employees()
+        filter_employees()
+
+    def filter_employees(*args):
+        search_term = emp_search_ent.get().strip()
         for i in emp_tree.get_children(): emp_tree.delete(i)
-        for name, count in database.get_all_unique_employees():
-            emp_tree.insert("", tk.END, values=(name, count))
+        for name, count in all_employees_cache:
+            if search_term in name:
+                emp_tree.insert("", tk.END, values=(name, count))
+
+    emp_search_ent.bind("<KeyRelease>", filter_employees)
 
     def on_emp_select(e):
         selected = emp_tree.selection()
@@ -1579,30 +1606,57 @@ def open_data_cleanup_window(parent):
     tb.Button(emp_controls, text="حذف کامل", bootstyle=DANGER, command=del_emp).pack(side=tk.LEFT, padx=5)
     tb.Button(emp_controls, text="اصلاح و ادغام", bootstyle=SUCCESS, command=fix_emp).pack(side=tk.LEFT, padx=5)
 
+
     # --- TAB 2: VISITORS (مهمانان) ---
     vis_tab = tb.Frame(notebook, padding=10)
     notebook.add(vis_tab, text="اصلاح نام مهمانان")
 
-    vis_tree = tb.Treeview(vis_tab, columns=("nid", "name", "count"), show='headings', bootstyle=INFO)
+    # Visitor Search Bar
+    vis_search_frame = tb.Frame(vis_tab)
+    vis_search_frame.pack(fill=tk.X, pady=(0, 10))
+    tb.Label(vis_search_frame, text=": جستجو (نام یا کد ملی)", font=(FONT_MAIN, 11)).pack(side=tk.RIGHT, padx=5)
+    vis_search_ent = tb.Entry(vis_search_frame, justify="right", font=(FONT_MAIN, 11))
+    vis_search_ent.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=5)
+
+    vis_tree_frame = tb.Frame(vis_tab)
+    vis_tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+
+    vis_v_scroll = tb.Scrollbar(vis_tree_frame, orient=tk.VERTICAL)
+    vis_v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+    vis_tree = tb.Treeview(vis_tree_frame, columns=("nid", "name", "count"), show='headings', bootstyle=INFO, yscrollcommand=vis_v_scroll.set)
+    vis_v_scroll.config(command=vis_tree.yview)
+
     vis_tree.heading("nid", text="کد ملی")
     vis_tree.heading("name", text="نام ثبت شده")
     vis_tree.heading("count", text="دفعات مراجعه")
-    vis_tree.column("nid", width=120, anchor=tk.CENTER)
-    vis_tree.column("name", width=250, anchor=tk.CENTER)
+    vis_tree.column("nid", width=200, anchor=tk.CENTER)
+    vis_tree.column("name", width=500, anchor=tk.CENTER)
     vis_tree.column("count", width=100, anchor=tk.CENTER)
-    vis_tree.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+    vis_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     vis_controls = tb.Frame(vis_tab)
-    vis_controls.pack(fill=tk.X)
+    vis_controls.pack(fill=tk.X, pady=(0, 10))
 
     tb.Label(vis_controls, text=": نام صحیح").pack(side=tk.RIGHT, padx=5)
     ent_vis_correct = tb.Entry(vis_controls, justify="right", font=(FONT_MAIN, 11))
     ent_vis_correct.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=5)
 
+    all_visitors_cache = []
+
     def load_visitors():
+        nonlocal all_visitors_cache
+        all_visitors_cache = database.get_all_unique_visitors()
+        filter_visitors()
+
+    def filter_visitors(*args):
+        search_term = vis_search_ent.get().strip()
         for i in vis_tree.get_children(): vis_tree.delete(i)
-        for nid, name, count in database.get_all_unique_visitors():
-            vis_tree.insert("", tk.END, values=(nid, name, count))
+        for nid, name, count in all_visitors_cache:
+            if search_term in name or search_term in nid:
+                vis_tree.insert("", tk.END, values=(nid, name, count))
+
+    vis_search_ent.bind("<KeyRelease>", filter_visitors)
 
     def on_vis_select(e):
         selected = vis_tree.selection()
