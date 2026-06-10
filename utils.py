@@ -3,9 +3,7 @@ import sys
 import re
 from datetime import datetime
 from tkinter import messagebox, filedialog
-import arabic_reshaper
 from bidi.algorithm import get_display
-import config
 import sqlite3
 import database
 
@@ -222,7 +220,6 @@ def do_restore(parent, current_username="admin"):
             'audit_log': {'new': 0, 'dup': 0, 'err': 0}
         }
         
-        # Restore visitors
         sqlite_cursor.execute("""
             SELECT visitor_name, national_id, employee_to_meet, department,
                    entry_time, shamsi_date, exit_time, created_by FROM visitors
@@ -237,7 +234,6 @@ def do_restore(parent, current_username="admin"):
             except:
                 stats['visitors']['err'] += 1
         
-        # Restore users
         sqlite_cursor.execute("SELECT username, password, role, full_name FROM users")
         for row in sqlite_cursor.fetchall():
             try:
@@ -249,7 +245,6 @@ def do_restore(parent, current_username="admin"):
             except:
                 stats['users']['err'] += 1
         
-        # Restore audit logs
         sqlite_cursor.execute("""
             SELECT shamsi_date, shamsi_time, event_type, user_name,
                    visitor_id, visitor_name, national_id, employee_to_meet,
