@@ -8,7 +8,7 @@ SQLITE_DB_PATH = r"C:\ProgramData\VisitorSystem\visitor_log.db"
 
 SQL_SERVER = r"10.15.2.26\visitormanager"
 SQL_USER = "VisitorAppUser"
-SQL_PASSWORD = "Herasat1405@"
+SQL_PASSWORD = ""
 SQL_DATABASE = "VisitorSystem"
 
 CONN_STR = (
@@ -28,7 +28,7 @@ def drop_and_create_tables(sql_cursor):
     sql_cursor.commit()
     print("Dropped existing tables.")
 
-    # Create visitors table
+#======== VISITORS TABLE ========
     sql_cursor.execute("""
         CREATE TABLE visitors (
             id INT IDENTITY(1,1) PRIMARY KEY,
@@ -43,7 +43,7 @@ def drop_and_create_tables(sql_cursor):
         )
     """)
     
-    # Create users table
+#======== USERS TABLE ========
     sql_cursor.execute("""
         CREATE TABLE users (
             id INT IDENTITY(1,1) PRIMARY KEY,
@@ -54,7 +54,7 @@ def drop_and_create_tables(sql_cursor):
         )
     """)
     
-    # Create audit_log table
+#======== AUDIT LOG TABLE ========
     sql_cursor.execute("""
         CREATE TABLE audit_log (
             id INT IDENTITY(1,1) PRIMARY KEY,
