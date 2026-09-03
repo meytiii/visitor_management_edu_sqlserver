@@ -1,47 +1,43 @@
-# 🛡️ Visitor Management System – SQL Server Edition
+# Visitor Management System (SQL Server edition)
 
 [![Version](https://img.shields.io/badge/version-4.1.2-blue.svg)](https://github.com/meytiii/visitor_management_sqlserver)
 [![Python](https://img.shields.io/badge/python-3.9%2B-green.svg)](https://www.python.org/)
 [![SQL Server](https://img.shields.io/badge/SQL%20Server-2019%2B-red.svg)](https://www.microsoft.com/sql-server)
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 
-**Centralised, high‑performance version with Microsoft SQL Server backend.**  
-Designed for multi‑station environments, improved security, and enterprise‑grade reliability.
+Visitor management desktop application with a Microsoft SQL Server backend. Built for multi-workstation environments that require shared access, role-based accounts, and centralized logging.
 
-> 🚨 **This is the actively developed version.**  
-> The old SQLite‑based version is [archived and no longer supported](https://github.com/meytiii/visitor_management_edu).
+> Note: This repository is the active release. The previous SQLite-based project is [archived and unsupported](https://github.com/meytiii/visitor_management_edu).
 
 ---
 
-## ✨ What's New in SQL Server Edition
+## Changes from the SQLite edition
 
-- **Central database** – Multiple workstations can connect to the same SQL Server instance.
-- **Better concurrency** – No more file‑locking issues; true client‑server architecture.
-- **Enhanced security** – SQL Server authentication, encrypted connections (optional).
-- **Higher performance** – Optimised indexes, stored procedures (coming soon).
-- **Easier backups** – Use SQL Server native backup tools.
-- **Migration tool included** – Convert your old SQLite data to SQL Server with one script.
+- Multi-client access: Multiple workstations connect to a central SQL Server instance without database file locks.
+- Security: SQL Server authentication with support for encrypted connections.
+- Native maintenance: Works with standard SQL Server backup and restore tools.
+- Data migration: Includes a migration script to copy existing records from SQLite.
 
 ---
 
-## 📋 Requirements
+## Requirements
 
-- Windows 7/10/11 (or Windows Server)
-- SQL Server 2019 or newer (Express edition works fine)
-- SQL Server ODBC Driver – **ODBC Driver 18 for SQL Server** (or Native Client 11.0)
-- Python 3.9+ (only if running from source)
+- Windows 10, Windows 11, or Windows Server
+- Microsoft SQL Server 2019 or later (including SQL Server Express)
+- ODBC Driver 18 for SQL Server (or SQL Server Native Client 11.0)
+- Python 3.9 or later (if running from source)
 
 ---
 
-## 🚀 Installation & Setup
+## Installation and setup
 
 ### 1. Prepare SQL Server
 
-Create a database (e.g., `VisitorSystem`) and a SQL login (e.g., `VisitorAppUser`) with `INSERT`, `SELECT`, `UPDATE`, `DELETE` permissions on the tables. The application will create the tables automatically on first run.
+Create a database (such as `VisitorSystem`) and a SQL login (such as `VisitorAppUser`) with `SELECT`, `INSERT`, `UPDATE`, and `DELETE` permissions. The application creates required tables automatically on first startup.
 
-### 2. Configure the Application
+### 2. Configure the application
 
-Edit `config.py` and update the SQL connection parameters:
+Update the connection settings in `config.py`:
 
 ```python
 SQL_SERVER = r"10.15.2.26\visitormanager"
@@ -51,7 +47,8 @@ SQL_PASSWORD = "password"
 SQL_DRIVER = "{ODBC Driver 18 for SQL Server}"
 ```
 
-### 3. Run from Source
+### 3. Run from source
+
 ```bash
 git clone https://github.com/meytiii/visitor_management_sqlserver.git
 cd visitor_management_sqlserver
@@ -59,30 +56,26 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### 4. Build Standalone EXE
+### 4. Build a standalone executable
+
 ```bash
 pyinstaller --noconsole --onefile --icon=assets/app_icon.ico --add-data "assets;assets" main.py
 ```
 
-### 🔄 Migrate Old Data (from SQLite)
+---
 
-If you have been using the old SQLite‑based version, you can migrate all existing records (visitors, users, audit logs) to the new SQL Server database using the provided migration script.
+## Data migration from SQLite
 
-**Migration Script:** `migrate_old_DB.py`
+If you are upgrading from the SQLite version, use `assets/migrate_old_DB.py` to copy visitor records, user accounts, and audit logs into SQL Server.
 
-Place the script in a folder like `migration_tool/` inside the repository.  
-You can download it directly from the repository at:
+### Running the migration
 
-👉 [migrate_old_DB.py](https://github.com/meytiii/visitor_management_edu_sqlserver/blob/main/assets/migrate_old_DB.py)
+1. Confirm your existing SQLite database file is accessible. By default, it is located at:
+   `C:\ProgramData\VisitorSystem\visitor_log.db`
 
+2. Ensure SQL Server is running and the target database exists.
 
-### How to Use
-
-1. **Ensure your old SQLite database is intact** – it is usually located at: C:\ProgramData\VisitorSystem\visitor_log.db
-
-2. **Make sure SQL Server is running** and the database `VisitorSystem` exists.
-
-3. **Edit the migration script** if needed – check the connection string (driver, server, credentials). The default configuration is:
+3. Open `assets/migrate_old_DB.py` and verify connection details:
 
 ```python
 SQL_SERVER = r"10.15.2.26\visitormanager"
@@ -92,37 +85,39 @@ SQL_DATABASE = "VisitorSystem"
 CONN_STR = f"DRIVER={{SQL Server Native Client 11.0}};SERVER={SQL_SERVER};DATABASE={SQL_DATABASE};UID={SQL_USER};PWD={SQL_PASSWORD};Trusted_Connection=no;"
 ```
 
-3. **Run the migration script from a terminal:**
+4. Run the script:
+
 ```bash
-cd migration_tool
-python migrate_old_DB.py
+python assets/migrate_old_DB.py
 ```
 
-### What the Script Does
+### Migration details
 
-- 🔄 **Drops existing tables** (`visitors`, `users`, `audit_log`) and recreates them with the correct schema.
-- 📂 **Reads all data** from the old SQLite file (`visitor_log.db`).
-- 📥 **Inserts every record** into the SQL Server tables.
-- 🚫 **Skips duplicate usernames** in the `users` table.
-- ✅ **Preserves all original fields** (including Persian dates and entry times).
+The migration script:
+- Recreates the target tables (`visitors`, `users`, and `audit_log`) in SQL Server.
+- Reads data from the SQLite database file.
+- Copies existing rows into SQL Server.
+- Skips duplicate usernames in the `users` table.
+- Retains original timestamp and Shamsi date fields.
 
-### Verify the Migration
+> Important: The script drops existing tables in the target database before importing. If you have already recorded new entries in SQL Server, back up your database before running the script.
 
-Run the application and search for old records, or check directly in SQL Server Management Studio.
+### Verification
 
-> ⚠️ **Important:** The migration script **drops existing tables** before importing. If you already have new data in SQL Server, back it up first or modify the script to append instead.
+Open the application to search for migrated records, or query the database directly in SQL Server Management Studio.
 
+---
 
-## 🛠️ Tech Stack
+## Tech stack
 
-| Component | Technology |
-|-----------|------------|
-| **Language** | Python 3.9+ |
-| **GUI Framework** | Tkinter + `ttkbootstrap` |
-| **Database** | Microsoft SQL Server |
-| **ODBC Driver** | `pyodbc` + ODBC Driver 18 / Native Client 11.0 |
-| **Persian Date** | `jdatetime` |
-| **Printing (Windows)** | `win32print` / `win32ui` |
-| **Reporting & Charts** | `pandas` + `matplotlib` |
-| **Text Reshaping** | `arabic_reshaper` + `python-bidi` |
-| **Image Processing** | Pillow (PIL) |
+| Layer | Tool |
+|---|---|
+| Language | Python 3.9+ |
+| Interface | Tkinter, ttkbootstrap |
+| Database | Microsoft SQL Server |
+| Database driver | pyodbc (ODBC Driver 18 / Native Client 11.0) |
+| Persian calendar | jdatetime |
+| Printing | pywin32 (`win32print`, `win32ui`) |
+| Data analysis and charts | pandas, matplotlib |
+| Persian and Arabic text | arabic-reshaper, python-bidi |
+| Image processing | Pillow |
