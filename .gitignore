@@ -15,3 +15,5 @@ build/
 Thumbs.db
 
 main.spec
+
+graphify-out/*
