@@ -82,7 +82,10 @@ class AutocompleteEntry(ttk.Entry):
             self.var = tk.StringVar()
             self["textvariable"] = self.var
         
-        self.var.trace('w', self.changed)
+        if hasattr(self.var, 'trace_add'):
+            self._trace_id = self.var.trace_add('write', self.changed)
+        else:
+            self._trace_id = self.var.trace('w', self.changed)
         self.bind("<Right>", self.selection)
         self.bind("<Up>", self.move_up)
         self.bind("<Down>", self.move_down)
@@ -92,14 +95,20 @@ class AutocompleteEntry(ttk.Entry):
         self.lb_up = False
         self._after_id = None
 
-    def changed(self, name, index, mode):
-        if self.var.get() == '':
+    def changed(self, name=None, index=None, mode=None):
+        val = self.var.get().strip()
+        if not val:
             self._destroy_lb()
             return
         words = self.comparison()
         if words:
             if not self.lb_up:
-                self.lb = tk.Listbox(self.master, width=self["width"], height=8, font=self["font"], bd=1, relief=tk.SOLID)
+                try:
+                    default_width = int(self.cget("width"))
+                except Exception:
+                    default_width = 25
+                lb_width = max(self.winfo_width() // 9, 20) if self.winfo_width() > 50 else default_width
+                self.lb = tk.Listbox(self.master, width=lb_width, height=min(8, len(words)), font=self["font"], bd=1, relief=tk.SOLID)
                 self.lb.bind("<ButtonRelease-1>", self.selection)
                 self.lb.bind("<Right>", self.selection)
                 self.lb.place(x=self.winfo_x(), y=self.winfo_y() + self.winfo_height())
@@ -113,16 +122,20 @@ class AutocompleteEntry(ttk.Entry):
             self._destroy_lb()
 
     def comparison(self):
-        pattern = self.var.get().lower()
-        return [w for w in self.completevalues if w.lower().startswith(pattern)]
+        pattern = self.var.get().strip().lower()
+        if not pattern:
+            return []
+        prefix_matches = [w for w in self.completevalues if w.lower().startswith(pattern)]
+        contain_matches = [w for w in self.completevalues if pattern in w.lower() and w not in prefix_matches]
+        return prefix_matches + contain_matches
 
-    def selection(self, event):
+    def selection(self, event=None):
         if self._after_id:
             self.after_cancel(self._after_id)
             self._after_id = None
         if self.lb_up:
             selected_val = None
-            if event and event.widget == self.lb:
+            if event and hasattr(event, 'widget') and event.widget == getattr(self, 'lb', None):
                 try:
                     index = self.lb.nearest(event.y)
                     selected_val = self.lb.get(index)
@@ -142,6 +155,10 @@ class AutocompleteEntry(ttk.Entry):
             self.icursor(tk.END)
             self.tk_focusNext().focus()
             return "break"
+        else:
+            if event and getattr(event, 'keysym', '') == 'Return':
+                self.tk_focusNext().focus()
+                return "break"
 
     def move_up(self, event):
         if self.lb_up:

@@ -1,6 +1,6 @@
 # Visitor Management System (SQL Server edition)
 
-[![Version](https://img.shields.io/badge/version-4.1.2-blue.svg)](https://github.com/meytiii/visitor_management_sqlserver)
+[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/meytiii/visitor_management_sqlserver)
 [![Python](https://img.shields.io/badge/python-3.9%2B-green.svg)](https://www.python.org/)
 [![SQL Server](https://img.shields.io/badge/SQL%20Server-2019%2B-red.svg)](https://www.microsoft.com/sql-server)
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)

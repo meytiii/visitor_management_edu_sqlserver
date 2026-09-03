@@ -11,13 +11,16 @@ SQL_USER = "VisitorAppUser"
 SQL_PASSWORD = ""
 SQL_DATABASE = "VisitorSystem"
 
+SQL_DRIVER = os.environ.get("VISITOR_DB_DRIVER", "{ODBC Driver 18 for SQL Server}")
+
 CONN_STR = (
-    f"DRIVER={{SQL Server Native Client 11.0}};"
+    f"DRIVER={SQL_DRIVER};"
     f"SERVER={SQL_SERVER};"
     f"DATABASE={SQL_DATABASE};"
     f"UID={SQL_USER};"
     f"PWD={SQL_PASSWORD};"
     "Trusted_Connection=no;"
+    "Encrypt=no;"
 )
 # ===================================
 

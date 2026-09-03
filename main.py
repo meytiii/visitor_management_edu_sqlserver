@@ -28,7 +28,7 @@ app.resizable(False, False)
 app.withdraw()
 
 try:
-    icon_path = utils.resource_path(os.path.join('assets', 'app_icon.ico'))
+    icon_path = utils.get_icon_path()
     app.iconbitmap(icon_path)
     app.iconbitmap(default=icon_path)
 except Exception: 
@@ -211,7 +211,14 @@ def submit_visitor():
             shamsi_date=shamsi_date_str
         )
         
-        threading.Thread(target=printer.print_receipt, args=(visitor_id, visitor_name, national_id, employee_to_meet, department, now, shamsi_date_str), daemon=True).start()
+        def on_print_err(err_msg):
+            app.after(0, lambda: show_status(f"⚠️ {err_msg}", "orange", duration=7000))
+
+        threading.Thread(
+            target=printer.print_receipt,
+            args=(visitor_id, visitor_name, national_id, employee_to_meet, department, now, shamsi_date_str, on_print_err),
+            daemon=True
+        ).start()
         show_success_overlay(card_frame)
         clear_fields()
         show_status(f"✓ ورود مهمان با شماره {visitor_id} با موفقیت ثبت شد", "green", duration=10000)
@@ -228,7 +235,7 @@ def submit_visitor():
 card_frame = tb.Frame(app, padding=15)
 card_frame.place(relx=0.5, rely=0.46, anchor="center", width=420, height=480)
 
-header_lbl = tb.Label(card_frame, text="🛡️(سامانه ثبت ورود و خروج (اداره حراست💻", font=(FONT_MAIN, 16, "bold"), anchor="center")
+header_lbl = tb.Label(card_frame, text="🛡️ سامانه ثبت ورود و خروج (اداره حراست) 💻", font=(FONT_MAIN, 16, "bold"), anchor="center")
 header_lbl.grid(row=0, column=0, columnspan=2, pady=(5, 15), sticky="ew")
 
 labels = {": شماره کارت ملی 🆔": 1, ": نام ملاقات کننده 🙋": 2, ": نام ملاقات شونده 👔": 3, ": امور / واحد مربوطه 🏢": 4}
@@ -264,11 +271,19 @@ tb.Button(btn_frame, text="راهنما📑", command=lambda: windows.show_help_
 
 # --- LOGIN & MENU SETUP ---
 def force_disconnect():
+    try:
+        if not app.winfo_exists():
+            return
+    except Exception:
+        return
     if getattr(app, 'is_logged_in', False):
         app.is_logged_in = False
         for child in app.winfo_children():
             if isinstance(child, tk.Toplevel):
-                child.destroy()
+                try:
+                    child.destroy()
+                except Exception:
+                    pass
         app.withdraw()
         messagebox.showerror("خطای ارتباط", "ارتباط شما با سرور پایگاه داده قطع شد")
         windows.show_login_screen(app, setup_dashboard)
@@ -339,6 +354,7 @@ def setup_dashboard(username, role, full_name):
     app.current_user = full_name
     app.current_username = username
     app.current_role = role
+    app.setup_dashboard_callback = setup_dashboard
     app.title(f"سامانه مدیریت ورود و خروج (اداره حراست)   |   کاربر: {full_name}")
     rebuild_dashboard_menu()
     try:

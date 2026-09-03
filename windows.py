@@ -119,7 +119,7 @@ def show_login_screen(app, on_success_callback):
             login_win.bg_image_obj = bg_image_obj 
         except Exception as e: pass
 
-    try: login_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
+    try: login_win.iconbitmap(utils.get_icon_path())
     except: pass
 
     # --- CONNECTION STATUS BAR ---
@@ -234,7 +234,7 @@ def open_server_settings(parent, on_settings_changed=None):
     settings_win.geometry("500x680")
     settings_win.resizable(False, False)
     try:
-        settings_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
+        settings_win.iconbitmap(utils.get_icon_path())
     except:
         pass
 
@@ -386,7 +386,7 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
     um_win.geometry("750x550")
     um_win.resizable(False, False)
     try:
-        um_win.iconbitmap(utils.resource_path('app_icon.ico'))
+        um_win.iconbitmap(utils.get_icon_path())
     except:
         pass
 
@@ -497,9 +497,14 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
         p = new_pass_ent.get().strip()
         r = role_var.get()
 
-        if len(u) < 3 or len(p) < 3:
+        if len(u) < 3:
             messagebox.showwarning(
-                "خطا", "نام کاربری و رمز عبور باید حداقل ۳ حرف باشند", parent=um_win
+                "خطا", "نام کاربری باید حداقل ۳ حرف باشد", parent=um_win
+            )
+            return
+        if len(p) < 6:
+            messagebox.showwarning(
+                "خطا", "رمز عبور باید حداقل ۶ کاراکتر باشد", parent=um_win
             )
             return
         if len(fname) < 2:
@@ -552,9 +557,9 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
                     um_win.destroy()
                     parent.destroy()
                     app.current_user = None
-                    from windows import show_login_screen
-                    import main
-                    show_login_screen(app, main.setup_dashboard)
+                    relogin_cb = getattr(app, 'setup_dashboard_callback', None)
+                    if relogin_cb:
+                        show_login_screen(app, relogin_cb)
             else:
                 messagebox.showerror("خطا", msg, parent=um_win)
 
@@ -580,7 +585,7 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
         edit_win.geometry("400x800")
         edit_win.resizable(False, False)
         try:
-            edit_win.iconbitmap(utils.resource_path('app_icon.ico'))
+            edit_win.iconbitmap(utils.get_icon_path())
         except:
             pass
 
@@ -686,8 +691,8 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
                 return
 
             if new_pass or confirm_pass:
-                if len(new_pass) < 3:
-                    status_label.config(text="❌ رمز عبور باید حداقل ۳ کاراکتر باشد", bootstyle=DANGER)
+                if len(new_pass) < 6:
+                    status_label.config(text="❌ رمز عبور باید حداقل ۶ کاراکتر باشد", bootstyle=DANGER)
                     return
                 if new_pass != confirm_pass:
                     status_label.config(text="❌ تکرار رمز عبور مطابقت ندارد", bootstyle=DANGER)
@@ -699,13 +704,12 @@ def open_user_manager(parent, app=None, current_user=None, on_self_role_change=N
                     status_label.config(text="❌ نام کاربری تکراری است", bootstyle=DANGER)
                     return
 
-            if (current_user and username == current_user and
-                user_data[1] == 'admin' and new_role != 'admin'):
+            if user_data[1] == 'admin' and new_role != 'admin':
                 users = database.get_all_users()
                 admin_count = sum(1 for _, r, _ in users if r == 'admin')
                 if admin_count <= 1:
                     status_label.config(
-                        text="❌ نمی‌توانید نقش خود را تغییر دهید (آخرین مدیر سیستم)",
+                        text="❌ نمی‌توانید نقش را تغییر دهید (آخرین مدیر سیستم)",
                         bootstyle=DANGER
                     )
                     return
@@ -776,7 +780,7 @@ def show_daily_stats_ui(parent_win):
     stats_win.title("آمار تردد")
     stats_win.geometry("420x420")
     stats_win.resizable(False,False)
-    try: stats_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
+    try: stats_win.iconbitmap(utils.get_icon_path())
     except: pass
     
     main_frame = tb.Frame(stats_win, padding=15)
@@ -832,7 +836,7 @@ def show_heatmap_analytics(app):
     analytics_win.title("تحلیل آماری تردد")
     analytics_win.geometry("1000x800")
     analytics_win.resizable(False, False)
-    try: analytics_win.iconbitmap(utils.resource_path('app_icon.ico'))
+    try: analytics_win.iconbitmap(utils.get_icon_path())
     except: pass
     
     # ---------- FILTER FRAME ----------
@@ -849,7 +853,7 @@ def show_heatmap_analytics(app):
     cb_month = tb.Combobox(time_frame, values=[""] + config.PERSIAN_MONTHS, width=10, state="readonly", justify='center')
     cb_month.pack(side=tk.RIGHT, padx=2)
     tb.Label(time_frame, text="ماه").pack(side=tk.RIGHT)
-    cb_year = tb.Combobox(time_frame, values=[""] + [str(i) for i in range(1400, 1411)], width=5, state="readonly", justify='center')
+    cb_year = tb.Combobox(time_frame, values=[""] + utils.get_shamsi_years(), width=5, state="readonly", justify='center')
     cb_year.pack(side=tk.RIGHT, padx=2)
     tb.Label(time_frame, text="سال").pack(side=tk.RIGHT)
     
@@ -955,7 +959,7 @@ def show_heatmap_analytics(app):
 def open_search_window(app):
     ensure_fonts()
     search_win = tb.Toplevel(app)
-    try: search_win.iconbitmap(utils.resource_path('app_icon.ico'))
+    try: search_win.iconbitmap(utils.get_icon_path())
     except: pass
     search_win.title("مشاهده و جستجوی سوابق")
     search_win.geometry("1300x800") 
@@ -981,7 +985,7 @@ def open_search_window(app):
     combo_day.grid(row=1, column=4, sticky=tk.E, padx=(0, 5))
     combo_month = tb.Combobox(search_frame, values=[""] + config.PERSIAN_MONTHS, justify='center', width=10, state='readonly')
     combo_month.grid(row=1, column=4, sticky=tk.E, padx=(0, 55))
-    combo_year = tb.Combobox(search_frame, values=[""] + [str(i) for i in range(1404, 1451)], justify='center', width=5, state='readonly')
+    combo_year = tb.Combobox(search_frame, values=[""] + utils.get_shamsi_years(), justify='center', width=5, state='readonly')
     combo_year.grid(row=1, column=4, sticky=tk.W, padx=(0, 0))
     
     tb.Label(search_frame, text=": واحد").grid(row=1, column=3, sticky=tk.E, padx=(15, 5), pady=5)
@@ -1088,7 +1092,18 @@ def open_search_window(app):
 
     def export_to_excel():
         filters = current_filters
-        total, all_rows = database.search_visitors(filters, page=1, items_per_page=1000000)
+        chunk_size = 5000
+        page = 1
+        all_rows = []
+        while True:
+            total, chunk = database.search_visitors(filters, page=page, items_per_page=chunk_size)
+            if not chunk:
+                break
+            all_rows.extend(chunk)
+            if len(all_rows) >= total:
+                break
+            page += 1
+
         if not all_rows:
             messagebox.showwarning("هشدار", "رکوردی برای خروجی گرفتن با این فیلترها وجود ندارد", parent=search_win)
             return
@@ -1129,7 +1144,7 @@ def open_search_window(app):
         popup.title("ثبت خروج")
         popup.geometry("500x500")
         try:
-            popup.iconbitmap(utils.resource_path('app_icon.ico'))
+            popup.iconbitmap(utils.get_icon_path())
         except:
             pass
         
@@ -1222,6 +1237,34 @@ def open_search_window(app):
     buttons_frame.pack(fill=tk.X)
     tb.Button(buttons_frame, text="جستجو", command=search_action, bootstyle=PRIMARY, width=15).pack(side=tk.RIGHT, padx=5)
     tb.Button(buttons_frame, text="نمایش همه", command=reset_action, bootstyle=(SECONDARY, OUTLINE), width=15).pack(side=tk.RIGHT, padx=5)
+    
+    def reprint_selected():
+        selected = tree.selection()
+        if not selected:
+            messagebox.showwarning("چاپ رسید", "لطفاً ابتدا یک رکورد را انتخاب کنید", parent=search_win)
+            return
+        vals = tree.item(selected[0], "values")
+        visitor_id = int(vals[0])
+        visitor_name = vals[1]
+        national_id = vals[2]
+        employee_to_meet = vals[3]
+        department = vals[4]
+        shamsi_date = vals[6]
+        
+        import printer
+        def on_err(e):
+            search_win.after(0, lambda: messagebox.showerror("خطای چاپ", f"خطا در چاپ مجدد:\n{e}", parent=search_win))
+            
+        import threading
+        t = threading.Thread(
+            target=printer.print_receipt,
+            args=(visitor_id, visitor_name, national_id, employee_to_meet, department, datetime.now(), shamsi_date, on_err),
+            daemon=True
+        )
+        t.start()
+        messagebox.showinfo("چاپ مجدد", f"دستور چاپ رسید برای {visitor_name} ارسال شد", parent=search_win)
+
+    tb.Button(buttons_frame, text="چاپ مجدد رسید🖨️", command=reprint_selected, bootstyle=INFO, width=16).pack(side=tk.RIGHT, padx=5)
     tb.Button(buttons_frame, text="خروجی اکسل", command=export_to_excel, bootstyle=SUCCESS, width=15).pack(side=tk.LEFT, padx=5)
     
     search_action()
@@ -1234,7 +1277,7 @@ def export_audit_log_excel(parent, app=None):
     popup.geometry("480x340")
     popup.resizable(False, False)
     try:
-        popup.iconbitmap(utils.resource_path('app_icon.ico'))
+        popup.iconbitmap(utils.get_icon_path())
     except Exception:
         pass
 
@@ -1253,7 +1296,7 @@ def export_audit_log_excel(parent, app=None):
         tb.Label(row, text=label_text, font=(FONT_MAIN, 11), width=10,
                  anchor="e").pack(side=tk.RIGHT)
 
-        years  = [str(y) for y in range(1403, 1420)]
+        years  = utils.get_shamsi_years()
         months = config.PERSIAN_MONTHS
         days   = [str(d).zfill(2) for d in range(1, 32)]
 
@@ -1380,7 +1423,7 @@ def open_change_password_window(parent, username):
     cp_win.geometry("400x700")
     cp_win.resizable(False, False)
     try:
-        cp_win.iconbitmap(utils.resource_path(os.path.join('assets', 'app_icon.ico')))
+        cp_win.iconbitmap(utils.get_icon_path())
     except:
         pass
 
@@ -1467,8 +1510,8 @@ def open_change_password_window(parent, username):
             if not current_pw:
                 status_label.config(text="❌ لطفاً رمز عبور فعلی را وارد کنید", bootstyle=DANGER)
                 return
-            if len(new_pw) < 3:
-                status_label.config(text="❌ رمز عبور جدید باید حداقل ۳ کاراکتر باشد", bootstyle=DANGER)
+            if len(new_pw) < 6:
+                status_label.config(text="❌ رمز عبور جدید باید حداقل ۶ کاراکتر باشد", bootstyle=DANGER)
                 return
             if new_pw != confirm_pw:
                 status_label.config(text="❌ تکرار رمز عبور مطابقت ندارد", bootstyle=DANGER)
@@ -1519,7 +1562,7 @@ def open_data_cleanup_window(parent, on_data_change=None):
     cleanup_win = tb.Toplevel(parent)
     cleanup_win.title("پاکسازی و اصلاح داده‌های Autofill")
     cleanup_win.geometry("1000x800")
-    try: cleanup_win.iconbitmap(utils.resource_path('app_icon.ico'))
+    try: cleanup_win.iconbitmap(utils.get_icon_path())
     except: pass
 
     notebook = tb.Notebook(cleanup_win, bootstyle=PRIMARY)
@@ -1708,7 +1751,7 @@ def open_developer_mode(app, on_self_role_change=None, on_data_change=None):
     dev_win.title("پنل مدیریت")
     dev_win.geometry("400x700")
     dev_win.resizable(False,False)
-    try: dev_win.iconbitmap(utils.resource_path('app_icon.ico'))
+    try: dev_win.iconbitmap(utils.get_icon_path())
     except: pass
 
     bg_path = utils.resource_path(os.path.join('assets', 'developer.png'))

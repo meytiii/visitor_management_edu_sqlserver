@@ -3,7 +3,7 @@ from tkinter import messagebox
 import sys
 import json
 
-APP_VERSION = "4.2.8"
+APP_VERSION = "4.3.0"
 
 APP_DATA_DIR = os.path.join(os.environ['PROGRAMDATA'], 'VisitorSystem')
 
@@ -21,31 +21,75 @@ DEFAULT_SETTINGS = {
     "sql_database": os.environ.get("VISITOR_DB_NAME", "VisitorSystem"),
     "sql_user": os.environ.get("VISITOR_DB_USER", "VisitorAppUser"),
     "sql_password": os.environ.get("VISITOR_DB_PASS", ""),
-    "sql_driver": "{ODBC Driver 18 for SQL Server}"
+    "sql_driver": os.environ.get("VISITOR_DB_DRIVER", "{ODBC Driver 18 for SQL Server}"),
+    "sql_encrypt": os.environ.get("VISITOR_DB_ENCRYPT", "no"),
+    "sql_trust_cert": os.environ.get("VISITOR_DB_TRUST_CERT", "yes")
 }
 
 CONFIG_FILE = os.path.join(APP_DATA_DIR, "server_config.json")
 
-def _rebuild_connection_string():
-    global SQL_CONNECTION_STRING, SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER
-    SQL_CONNECTION_STRING = (
-        f"DRIVER={SQL_DRIVER};"
-        f"SERVER={SQL_SERVER};"
-        f"DATABASE={SQL_DATABASE};"
-        f"UID={SQL_USER};"
-        f"PWD={SQL_PASSWORD};"
+def _escape_odbc_val(val):
+    if not val:
+        return ""
+    val_str = str(val)
+    if any(c in val_str for c in (';', '{', '}', ' ')):
+        escaped = val_str.replace('}', '}}')
+        return f"{{{escaped}}}"
+    return val_str
+
+def build_connection_string(settings):
+    driver = settings.get("sql_driver", DEFAULT_SETTINGS["sql_driver"])
+    server = settings.get("sql_server", DEFAULT_SETTINGS["sql_server"])
+    database = settings.get("sql_database", DEFAULT_SETTINGS["sql_database"])
+    user = settings.get("sql_user", DEFAULT_SETTINGS["sql_user"])
+    password = settings.get("sql_password", DEFAULT_SETTINGS["sql_password"])
+    encrypt = settings.get("sql_encrypt", DEFAULT_SETTINGS["sql_encrypt"])
+    trust_cert = settings.get("sql_trust_cert", DEFAULT_SETTINGS["sql_trust_cert"])
+
+    driver_esc = driver if driver.startswith("{") and driver.endswith("}") else _escape_odbc_val(driver)
+    server_esc = _escape_odbc_val(server)
+    db_esc = _escape_odbc_val(database)
+    user_esc = _escape_odbc_val(user)
+    pwd_esc = _escape_odbc_val(password)
+
+    conn_str = (
+        f"DRIVER={driver_esc};"
+        f"SERVER={server_esc};"
+        f"DATABASE={db_esc};"
+        f"UID={user_esc};"
+        f"PWD={pwd_esc};"
         "Trusted_Connection=no;"
-        "Encrypt=no;"
     )
 
+    if encrypt.lower() in ("yes", "true", "1"):
+        conn_str += f"Encrypt=yes;TrustServerCertificate={trust_cert};"
+    else:
+        conn_str += "Encrypt=no;"
+
+    return conn_str
+
+def _rebuild_connection_string():
+    global SQL_CONNECTION_STRING, SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER, SQL_ENCRYPT, SQL_TRUST_CERT
+    SQL_CONNECTION_STRING = build_connection_string({
+        "sql_driver": SQL_DRIVER,
+        "sql_server": SQL_SERVER,
+        "sql_database": SQL_DATABASE,
+        "sql_user": SQL_USER,
+        "sql_password": SQL_PASSWORD,
+        "sql_encrypt": SQL_ENCRYPT,
+        "sql_trust_cert": SQL_TRUST_CERT
+    })
+
 def load_config():
-    global SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER
+    global SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER, SQL_ENCRYPT, SQL_TRUST_CERT
     if not os.path.exists(CONFIG_FILE):
         SQL_SERVER = DEFAULT_SETTINGS["sql_server"]
         SQL_DATABASE = DEFAULT_SETTINGS["sql_database"]
         SQL_USER = DEFAULT_SETTINGS["sql_user"]
         SQL_PASSWORD = DEFAULT_SETTINGS["sql_password"]
         SQL_DRIVER = DEFAULT_SETTINGS["sql_driver"]
+        SQL_ENCRYPT = DEFAULT_SETTINGS["sql_encrypt"]
+        SQL_TRUST_CERT = DEFAULT_SETTINGS["sql_trust_cert"]
         _rebuild_connection_string()
         return
 
@@ -57,6 +101,8 @@ def load_config():
         SQL_USER = saved.get("sql_user", DEFAULT_SETTINGS["sql_user"])
         SQL_PASSWORD = saved.get("sql_password", DEFAULT_SETTINGS["sql_password"])
         SQL_DRIVER = saved.get("sql_driver", DEFAULT_SETTINGS["sql_driver"])
+        SQL_ENCRYPT = saved.get("sql_encrypt", DEFAULT_SETTINGS["sql_encrypt"])
+        SQL_TRUST_CERT = saved.get("sql_trust_cert", DEFAULT_SETTINGS["sql_trust_cert"])
         _rebuild_connection_string()
     except Exception as e:
         print(f"Error loading server config: {e}")
@@ -65,15 +111,19 @@ def load_config():
         SQL_USER = DEFAULT_SETTINGS["sql_user"]
         SQL_PASSWORD = DEFAULT_SETTINGS["sql_password"]
         SQL_DRIVER = DEFAULT_SETTINGS["sql_driver"]
+        SQL_ENCRYPT = DEFAULT_SETTINGS["sql_encrypt"]
+        SQL_TRUST_CERT = DEFAULT_SETTINGS["sql_trust_cert"]
         _rebuild_connection_string()
 
 def save_config(settings_dict):
-    global SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER
+    global SQL_SERVER, SQL_DATABASE, SQL_USER, SQL_PASSWORD, SQL_DRIVER, SQL_ENCRYPT, SQL_TRUST_CERT
     SQL_SERVER = settings_dict["sql_server"]
     SQL_DATABASE = settings_dict["sql_database"]
     SQL_USER = settings_dict["sql_user"]
     SQL_PASSWORD = settings_dict["sql_password"]
     SQL_DRIVER = settings_dict["sql_driver"]
+    SQL_ENCRYPT = settings_dict.get("sql_encrypt", "no")
+    SQL_TRUST_CERT = settings_dict.get("sql_trust_cert", "yes")
     _rebuild_connection_string()
 
     try:
@@ -83,7 +133,9 @@ def save_config(settings_dict):
                 "sql_database": SQL_DATABASE,
                 "sql_user": SQL_USER,
                 "sql_password": SQL_PASSWORD,
-                "sql_driver": SQL_DRIVER
+                "sql_driver": SQL_DRIVER,
+                "sql_encrypt": SQL_ENCRYPT,
+                "sql_trust_cert": SQL_TRUST_CERT
             }, f, indent=2)
         return True
     except Exception as e:
@@ -92,15 +144,7 @@ def save_config(settings_dict):
 
 def test_connection(settings_dict):
     try:
-        conn_str = (
-            f"DRIVER={settings_dict['sql_driver']};"
-            f"SERVER={settings_dict['sql_server']};"
-            f"DATABASE={settings_dict['sql_database']};"
-            f"UID={settings_dict['sql_user']};"
-            f"PWD={settings_dict['sql_password']};"
-            "Trusted_Connection=no;"
-            "Encrypt=no;"
-        )
+        conn_str = build_connection_string(settings_dict)
         import pyodbc
         conn = pyodbc.connect(conn_str, timeout=5)
         conn.close()

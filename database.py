@@ -77,52 +77,81 @@ class ConnectionPool:
         raise last_exception
     
     def get_connection(self):
-        try:
-            conn = self._pool.get(timeout=0.5)
+        while True:
+            try:
+                conn = self._pool.get_nowait()
+            except Empty:
+                break
             try:
                 conn.execute("SELECT 1")
                 return conn
-            except:
-                conn.close()
+            except Exception:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
                 with self._pool_lock:
-                    self._active_count -= 1
-        except Empty:
-            pass
-        
+                    self._active_count = max(0, self._active_count - 1)
+
+        can_create = False
         with self._pool_lock:
             if self._active_count < self._max_size:
                 self._active_count += 1
-            else:
-                return self._pool.get(timeout=5)
-        
-        return self._get_with_retry()
-    
+                can_create = True
+
+        if can_create:
+            try:
+                return self._get_with_retry()
+            except Exception:
+                with self._pool_lock:
+                    self._active_count = max(0, self._active_count - 1)
+                raise
+
+        try:
+            conn = self._pool.get(timeout=self._timeout)
+            try:
+                conn.execute("SELECT 1")
+                return conn
+            except Exception:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+                with self._pool_lock:
+                    self._active_count = max(0, self._active_count - 1)
+                return self.get_connection()
+        except Empty:
+            raise TimeoutError(f"Database connection pool exhausted (max {self._max_size} connections).")
+
     def return_connection(self, conn, is_healthy=True):
+        if conn is None:
+            return
         if not is_healthy:
             try:
                 conn.close()
-            except:
+            except Exception:
                 pass
             with self._pool_lock:
-                self._active_count -= 1
+                self._active_count = max(0, self._active_count - 1)
             return
-        
+
         try:
-            self._pool.put(conn, timeout=1.0)
-        except:
+            self._pool.put_nowait(conn)
+        except Exception:
             try:
                 conn.close()
-            except:
+            except Exception:
                 pass
             with self._pool_lock:
-                self._active_count -= 1
-    
+                self._active_count = max(0, self._active_count - 1)
+
     def stats(self):
         return {
             "pool_size": self._pool.qsize(),
             "active_count": self._active_count,
             "max_size": self._max_size
         }
+
     def shutdown(self):
         with self._pool_lock:
             while not self._pool.empty():
@@ -130,11 +159,11 @@ class ConnectionPool:
                     conn = self._pool.get_nowait()
                     try:
                         conn.close()
-                    except:
+                    except Exception:
                         pass
-                except:
-                    pass
-            
+                except Empty:
+                    break
+
             self._active_count = 0
             self._initialized = False
 
@@ -162,11 +191,15 @@ class DBConnection:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         is_healthy = exc_type is None
-        if exc_type:
-            self.conn.rollback()
-        else:
-            self.conn.commit()
-        release_connection(self.conn, is_healthy)
+        if hasattr(self, 'conn') and self.conn:
+            try:
+                if exc_type:
+                    self.conn.rollback()
+                else:
+                    self.conn.commit()
+            except Exception:
+                is_healthy = False
+            release_connection(self.conn, is_healthy)
 
 # --- HASHING UTILS ---
 def hash_password(password):
@@ -283,6 +316,14 @@ def setup_database():
             cursor.execute("CREATE INDEX idx_audit_date ON audit_log (shamsi_date)")
         except:
             pass
+        try:
+            cursor.execute("CREATE INDEX idx_audit_event ON audit_log (event_type)")
+        except:
+            pass
+        try:
+            cursor.execute("CREATE INDEX idx_audit_user ON audit_log (user_name)")
+        except:
+            pass
         
         cursor.execute("SELECT COUNT(*) FROM users")
         if cursor.fetchone()[0] == 0:
@@ -301,31 +342,6 @@ _cache = {
     }
 }
 CACHE_DURATION = 300
-
-def get_employee_suggestions(force_refresh=False):
-    global _cache
-    now = time.time()
-    
-    if not force_refresh and (now - _cache["employees"]["timestamp"] < CACHE_DURATION):
-        return _cache["employees"]["data"]
-
-    try:
-        with DBConnection() as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT employee_to_meet, COUNT(*) as cnt 
-                FROM visitors 
-                WHERE employee_to_meet != '' 
-                GROUP BY employee_to_meet 
-                ORDER BY cnt DESC
-            ''')
-            names = [row[0] for row in cursor.fetchall()]
-            
-            _cache["employees"]["data"] = names
-            _cache["employees"]["timestamp"] = now
-            return names
-    except:
-        return []
 
 # --- USER MANAGEMENT ---
 def authenticate_user(username, password):
@@ -349,6 +365,8 @@ def authenticate_user(username, password):
         return False, None, None, f"خطا در اتصال به پایگاه داده:\n{str(e)}"
 
 def create_user(username, password, full_name, role="guard"):
+    if not password or len(password) < 6:
+        return False, "رمز عبور باید حداقل ۶ کاراکتر باشد"
     try:
         hashed = hash_password(password)
         with DBConnection() as conn:
@@ -387,6 +405,9 @@ def get_all_users():
         return cursor.fetchall()
 
 def change_user_password(username, new_password):
+    if not new_password or len(new_password) < 6:
+        print("Password too short: minimum 6 characters required")
+        return False
     try:
         hashed = hash_password(new_password)
         with DBConnection() as conn:
@@ -649,7 +670,9 @@ def get_all_audit_logs_for_backup():
         cursor.execute("""
             SELECT id, shamsi_date, shamsi_time, event_type, user_name,
                    visitor_id, visitor_name, national_id, employee_to_meet,
-                   department, details, created_at
+                   department, details, created_at,
+                   session_id, workstation_name, windows_user, mac_address,
+                   old_state, new_state
             FROM audit_log
             ORDER BY id
         """)
@@ -717,18 +740,24 @@ def insert_user_from_backup(username, password, role, full_name):
 
 def insert_audit_log_from_backup(shamsi_date, shamsi_time, event_type, user_name,
                                   visitor_id, visitor_name, national_id,
-                                  employee_to_meet, department, details, created_at):
+                                  employee_to_meet, department, details, created_at,
+                                  session_id=None, workstation_name=None, windows_user=None,
+                                  mac_address=None, old_state=None, new_state=None):
     with DBConnection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO audit_log
                 (shamsi_date, shamsi_time, event_type, user_name,
                  visitor_id, visitor_name, national_id,
-                 employee_to_meet, department, details, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 employee_to_meet, department, details, created_at,
+                 session_id, workstation_name, windows_user, mac_address,
+                 old_state, new_state)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (shamsi_date, shamsi_time, event_type, user_name,
               visitor_id, visitor_name, national_id,
-              employee_to_meet, department, details, created_at))
+              employee_to_meet, department, details, created_at,
+              session_id, workstation_name, windows_user, mac_address,
+              old_state, new_state))
 
 # --- ADDITIONAL FUNCTIONS FOR WINDOWS.PY ---
 
@@ -895,11 +924,20 @@ def update_user(old_username: str, new_username: str = None, new_fullname: str =
                 (new_fullname, old_username)
             )
         if new_role:
+            if new_role != 'admin':
+                cursor.execute("SELECT role FROM users WHERE username = ?", (old_username,))
+                curr_role = cursor.fetchone()
+                if curr_role and curr_role[0] == 'admin':
+                    cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+                    if cursor.fetchone()[0] <= 1:
+                        raise Exception("نمی‌توان آخرین مدیر سیستم را تنزل رتبه داد")
             cursor.execute(
                 "UPDATE users SET role = ? WHERE username = ?",
                 (new_role, old_username)
             )
         if new_password:
+            if len(new_password) < 6:
+                raise Exception("رمز عبور باید حداقل ۶ کاراکتر باشد")
             hashed = hash_password(new_password)
             cursor.execute(
                 "UPDATE users SET password = ? WHERE username = ?",
