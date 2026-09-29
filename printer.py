@@ -113,7 +113,6 @@ def generate_receipt_image(visitor_id, name, nid, emp, dept, entry_dt, shamsi_da
     f_badge = load_font(21)
     f_meta_lbl = load_font(16)
     f_meta_val = load_font(18)
-    f_card_tab = load_font(14)
     f_card_val = load_font(18)
     f_sign_hdr = load_font(15)
     f_sign_sub = load_font(14)
@@ -176,7 +175,7 @@ def generate_receipt_image(visitor_id, name, nid, emp, dept, entry_dt, shamsi_da
 
     # --- 3. SAYING WITH UPDATED ATTRIBUTION (16pt bold & 15pt bold) ---
     q_line1 = quote[0] if quote and len(quote) > 0 else "« جامعه معلمان، سربازان گمنام نظام اسلامی هستند »"
-    q_line2 = quote[1] if quote and len(quote) > 1 else "قائد شهید، (رضوان‌الله تعالی علیه)"
+    q_line2 = quote[1] if quote and len(quote) > 1 else "قائد شهید (رضوان‌الله تعالی علیه)"
     y = draw_text_center(y, q_line1, f_quote) + 5
     y = draw_text_center(y, q_line2, f_quote_author) + 16
 
@@ -231,27 +230,32 @@ def generate_receipt_image(visitor_id, name, nid, emp, dept, entry_dt, shamsi_da
 
     y += meta_box_h + 16
 
-    # --- 7. VISITOR & DESTINATION DETAILS CARD (215px height, Centered Layout) ---
-    card_h = 215
-    draw.rounded_rectangle([x_left, y, x_right, y + card_h], radius=7, outline=0, width=2)
-    # Centered Tab Header
-    tab_w = 190
-    tab_h = 26
-    draw.rounded_rectangle([x_center - (tab_w // 2), y - 1, x_center + (tab_w // 2), y + tab_h], radius=5, fill=0)
-    tab_title = reshape_farsi("مشخصات مراجع و مقصد")
-    tb_b = draw.textbbox((0, 0), tab_title, font=f_card_tab)
-    draw.text((x_center - ((tb_b[2] - tb_b[0]) // 2), y + 3), tab_title, font=f_card_tab, fill=255)
+    # --- 7. TITLE BADGE 2: مشخصات مراجع و مقصد (Identical solid black box & font as Badge 1) ---
+    badge2_h = 44
+    badge2_rect = [x_left + 25, y, x_right - 25, y + badge2_h]
+    draw.rounded_rectangle(badge2_rect, radius=8, fill=0)
+    badge2_text = "« مشخصات مراجع و مقصد »"
+    reshaped_badge2 = reshape_farsi(badge2_text)
+    bbox_b2 = draw.textbbox((0, 0), reshaped_badge2, font=f_badge)
+    b2w = bbox_b2[2] - bbox_b2[0]
+    b2h = bbox_b2[3] - bbox_b2[1]
+    draw.text((x_center - (b2w // 2), y + ((badge2_h - b2h) // 2) - 2), reshaped_badge2, font=f_badge, fill=255)
+    y += badge2_h + 12
 
-    card_y = y + 38
+    # Details Card Box (Centered layout, large bold text)
+    card_h = 185
+    draw.rounded_rectangle([x_left, y, x_right, y + card_h], radius=7, outline=0, width=2)
+
+    card_y = y + 16
     # Row 1: مراجع محترم
     draw_centered_card_row(card_y, "مراجع محترم:", str(name))
 
     # Row 2: کد ملی
-    card_y += 40
+    card_y += 38
     draw_centered_card_row(card_y, "کد ملی:", to_persian_digits(nid))
 
     # Centered Inner separator hairline
-    card_y += 34
+    card_y += 32
     draw.line([x_left + 30, card_y, x_right - 30, card_y], fill=0, width=1)
     card_y += 12
 
@@ -259,7 +263,7 @@ def generate_receipt_image(visitor_id, name, nid, emp, dept, entry_dt, shamsi_da
     draw_centered_card_row(card_y, "واحد مقصد:", str(dept))
 
     # Row 4: ملاقات‌شونده
-    card_y += 40
+    card_y += 38
     draw_centered_card_row(card_y, "ملاقات‌شونده:", str(emp))
 
     y += card_h + 16
@@ -325,10 +329,10 @@ def generate_receipt_image(visitor_id, name, nid, emp, dept, entry_dt, shamsi_da
     cropped = img.crop((0, 0, width, y))
 
     # Pure solid black thresholding:
-    # Any anti-aliased edge pixel < 225 becomes pure 0 (solid pitch black).
-    # This prevents the thermal printer driver from dithering thin gray dots,
-    # ensuring every pin fires at full heat for deep, crisp, jet-black lines.
-    thresholded = cropped.point(lambda p: 0 if p < 225 else 255, mode='1')
+    # A balanced threshold ensures anti-aliased black text on white remains solid and deep,
+    # while white inverted text on solid black boxes (like "برگه ورود مراجعین" and "مشخصات مراجع و مقصد")
+    # retains its full stroke thickness without erosion.
+    thresholded = cropped.point(lambda p: 0 if p < 140 else 255, mode='1')
     return thresholded.convert('RGB')
 
 
