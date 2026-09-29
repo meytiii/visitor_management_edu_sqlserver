@@ -260,7 +260,7 @@ def generate_receipt_image(visitor_id, name, nid, emp, dept, entry_dt, shamsi_da
     card_y += 12
 
     # Row 3: واحد مقصد
-    draw_centered_card_row(card_y, "واحد مقصد:", str(dept))
+    draw_centered_card_row(card_y, "معاونت/اداره مقصد:", str(dept))
 
     # Row 4: ملاقات‌شونده
     card_y += 38
