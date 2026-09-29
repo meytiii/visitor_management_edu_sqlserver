@@ -175,7 +175,7 @@ def generate_receipt_image(visitor_id, name, nid, emp, dept, entry_dt, shamsi_da
 
     # --- 3. SAYING OF AYATOLLAH KHAMENEI (Below Herasat headers) ---
     q_line1 = quote[0] if quote and len(quote) > 0 else "« جامعه معلمان، سربازان گمنام نظام اسلامی هستند »"
-    q_line2 = quote[1] if quote and len(quote) > 1 else "حضرت آیت‌الله خامنه‌ای (مدظله‌العالی)"
+    q_line2 = quote[1] if quote and len(quote) > 1 else "قائد شهید، (رضوان‌الله تعالی علیه)"
     y = draw_text_center(y, q_line1, f_quote) + 3
     y = draw_text_center(y, q_line2, f_quote_author) + 12
 
@@ -230,43 +230,43 @@ def generate_receipt_image(visitor_id, name, nid, emp, dept, entry_dt, shamsi_da
 
     y += meta_box_h + 12
 
-    # --- 7. VISITOR & DESTINATION DETAILS CARD ---
+    # --- 7. VISITOR & DESTINATION DETAILS CARD (Centered Layout) ---
     card_h = 176
     draw.rounded_rectangle([x_left, y, x_right, y + card_h], radius=6, outline=(0, 0, 0), width=2)
-    # Dossier Tab Header
+    # Centered Tab Header
     tab_w = 160
     tab_h = 22
-    draw.rounded_rectangle([x_right - tab_w - 10, y - 1, x_right - 10, y + tab_h], radius=4, fill=(0, 0, 0))
+    draw.rounded_rectangle([x_center - (tab_w // 2), y - 1, x_center + (tab_w // 2), y + tab_h], radius=4, fill=(0, 0, 0))
     tab_title = reshape_farsi("مشخصات مراجع و مقصد")
     tb_b = draw.textbbox((0, 0), tab_title, font=f_card_tab)
-    draw.text((x_right - 10 - tab_w + ((tab_w - (tb_b[2] - tb_b[0])) // 2), y + 2), tab_title, font=f_card_tab, fill=(255, 255, 255))
+    draw.text((x_center - ((tb_b[2] - tb_b[0]) // 2), y + 2), tab_title, font=f_card_tab, fill=(255, 255, 255))
 
-    card_y = y + 29
-    row_gap = 34
-    val_right_x = x_right - 125
+    def draw_centered_card_row(y_pos, lbl_text, val_text):
+        full_text = f"{lbl_text} {val_text}"
+        reshaped = reshape_farsi(full_text)
+        bbox = draw.textbbox((0, 0), reshaped, font=f_card_val)
+        w = bbox[2] - bbox[0]
+        draw.text((x_center - (w // 2), y_pos), reshaped, font=f_card_val, fill=(0, 0, 0))
 
+    card_y = y + 30
     # Row 1: مراجع محترم
-    draw_text_right(x_right - 14, card_y, "مراجع محترم:", f_card_lbl)
-    draw_text_right(val_right_x, card_y - 2, str(name), f_card_val)
+    draw_centered_card_row(card_y, "مراجع محترم:", str(name))
 
     # Row 2: کد ملی
-    card_y += row_gap
-    draw_text_right(x_right - 14, card_y, "کـد ملـی:", f_card_lbl)
-    draw_text_right(val_right_x, card_y - 2, to_persian_digits(nid), f_card_val)
+    card_y += 34
+    draw_centered_card_row(card_y, "کد ملی:", to_persian_digits(nid))
 
-    # Inner separator hairline
+    # Centered Inner separator hairline
     card_y += 28
-    draw.line([x_left + 14, card_y, x_right - 14, card_y], fill=(210, 210, 210), width=1)
+    draw.line([x_left + 40, card_y, x_right - 40, card_y], fill=(210, 210, 210), width=1)
     card_y += 8
 
     # Row 3: واحد مقصد
-    draw_text_right(x_right - 14, card_y, "واحد مقصد:", f_card_lbl)
-    draw_text_right(val_right_x, card_y - 2, str(dept), f_card_val)
+    draw_centered_card_row(card_y, "واحد مقصد:", str(dept))
 
     # Row 4: ملاقات‌شونده
-    card_y += row_gap
-    draw_text_right(x_right - 14, card_y, "ملاقات‌شونده:", f_card_lbl)
-    draw_text_right(val_right_x, card_y - 2, str(emp), f_card_val)
+    card_y += 34
+    draw_centered_card_row(card_y, "ملاقات‌شونده:", str(emp))
 
     y += card_h + 12
 
